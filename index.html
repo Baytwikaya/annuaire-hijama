@@ -793,12 +793,16 @@ function viewEspaceDash(){
     if(existing.indexOf(label)>-1){toast("Ce service figure déjà dans votre liste");inp.focus();return;}
     var photoName=fileNamesOf("svcPhoto");
     if(photoName)espaceSvcPhotos[label]=photoName;
+    var photoURL="";
+    var photoInp0=document.getElementById("svcPhoto");
+    if(photoName&&photoInp0&&photoInp0.files&&photoInp0.files[0]){try{photoURL=URL.createObjectURL(photoInp0.files[0]);}catch(e){photoURL="";}}
     var row=document.createElement("div");row.className="svc-row";
     row.innerHTML='<input type="text" class="svc-input" value="'+esc(label)+'"><button type="button" class="btn-del svc-del" aria-label="Retirer ce service">✕</button>';
     document.getElementById("svcList").appendChild(row);
     if(photoName){
       var pl=document.getElementById("svcPhotoList");
-      if(pl){var line=document.createElement("p");line.style.cssText="margin:0;font-size:.86rem;font-weight:700;color:var(--green)";line.textContent="📷 Photo jointe pour « "+v+" » : "+photoName;pl.appendChild(line);}
+      if(pl){var line=document.createElement("p");line.style.cssText="margin:0;font-size:.86rem;font-weight:700;color:var(--green)";line.textContent="📷 Photo jointe pour « "+v+" » : "+photoName;pl.appendChild(line);
+      if(photoURL){var thumb=document.createElement("img");thumb.src=photoURL;thumb.alt="Aperçu de la photo du service « "+v+" »";thumb.style.cssText="width:100%;max-width:320px;height:150px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block";pl.appendChild(thumb);}}
     }
     bindSvcDel();inp.value="";if(descEl)descEl.value="";
     var photoInp=document.getElementById("svcPhoto");if(photoInp)photoInp.value="";
