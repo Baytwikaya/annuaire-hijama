@@ -35,7 +35,7 @@ h1,h2,h3{font-family:"Playfair Display",Georgia,serif;line-height:1.22;margin:0;
 a{color:var(--green);text-decoration:none}
 a:hover{text-decoration:underline}
 button,[role="button"],select,summary,input,textarea{min-height:2.25rem}
-.wrap{max-width:1500px;margin:0 auto;padding:0 clamp(16px,3.5vw,48px)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 clamp(20px,4vw,40px)}
 /* Header */
 header.top{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:2px solid transparent;border-image:linear-gradient(90deg,var(--gold) 0%,#e9c860 45%,var(--gold) 100%) 1}
 .top-in{display:flex;align-items:center;gap:14px;padding:10px 0;flex-wrap:wrap}
@@ -682,7 +682,7 @@ function viewEspace(){
     var email=document.getElementById("l-email").value.trim(),pass=document.getElementById("l-pass").value;
     var err=document.getElementById("loginErr");
     if(!email||!pass){err.innerHTML='<div class="notice">Indiquez l\'e-mail de votre centre et votre mot de passe.</div>';return;}
-    if(!fbInit()){err.innerHTML='<div class="notice"><b>Connexion pas encore active.</b> Les comptes des centres s\'activent avec le domaine du site. En attendant, ouvrez l\'<b>aperçu de l\'espace</b> ci-dessus pour découvrir son fonctionnement.</div>';return;}
+    if(!fbInit()){err.innerHTML='<div class="notice"><b>Connexion pas encore active.</b> Les comptes des centres s\'activent avec le domaine du site. En attendant, ouvrez l\'<b>aperçu de l\'espace</b> ci-dessous pour découvrir son fonctionnement.</div>';return;}
     err.innerHTML="";
     firebase.auth().signInWithEmailAndPassword(email,pass).catch(function(error){
       var msg="Connexion impossible : vérifiez l'e-mail et le mot de passe.";
