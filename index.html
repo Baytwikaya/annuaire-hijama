@@ -368,7 +368,8 @@ function centreCard(c){
   +'<p class="meta">📍 '+esc(c.address)+'</p>'
   +'<p class="meta">🕗 Ouvert 7 j/7 — ven. jusqu\'à 11h30</p>'
   +'<div class="taglist">'+c.services.slice(0,4).map(function(s){return '<span class="tag">'+esc(s)+"</span>";}).join("")+'</div>'
-  +'<div class="actions"><a class="btn small" href="#/centre/'+c.slug+'">Voir la fiche</a><a class="btn small ghost" href="tel:'+c.phoneIntl+'">📞 '+c.phone+"</a></div></div></article>";
+  +'<div class="actions"><a class="btn small" href="#/centre/'+c.slug+'">Voir la fiche</a><a class="btn small ghost" href="tel:'+c.phoneIntl+'">📞 '+c.phone+"</a></div>"
+  +'<div class="own-space" style="margin-top:12px"><span aria-hidden="true" style="font-size:1.15rem;line-height:1">🔑</span><p style="margin:0"><b>C\'est votre centre ?</b> Ce centre a son propre <a href="#/espace" style="font-weight:700">Espace centre</a> : son responsable y gère cette fiche et peut y ajouter ses autres services.</p></div></div></article>';
 }
 function trackerBlock(){
   return '<section class="block" id="tracker"><div class="tracker"><div><span class="badge gold">Pour les professionnels</span>'
