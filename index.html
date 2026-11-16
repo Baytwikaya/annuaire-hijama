@@ -302,6 +302,7 @@ footer.site h3{color:var(--ink);font-size:1rem;margin-bottom:8px}
 footer.site a{color:var(--ink2);display:block;padding:4px 0;min-height:32px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:12px;font-weight:700;opacity:0;transition:.3s;z-index:99;max-width:92vw;text-align:center;pointer-events:none}
 .toast.show{transform:translateX(-50%);opacity:1}
+button:disabled{opacity:.6;cursor:wait}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -777,8 +778,78 @@ function espaceStartSession(mode,centre){
 function espaceLogout(){
   if(fbReady&&firebase.auth().currentUser)firebase.auth().signOut();
   espaceUser=null;espaceCentre=null;espaceDraft=null;espaceMode="";espacePending=false;espaceSvcPhotos={};
+  authNotice="";resolvedUid="";espaceNoticeUid="";
   toast("Vous êtes déconnecté de votre Espace centre");
   route();
+}
+/* ============ RÉSOLUTION DU COMPTE CONNECTÉ ============
+   Après une connexion Firebase réussie, on ne laisse plus le soin à un
+   seul écouteur de décider : on vérifie explicitement, pour ce compte,
+   (1) s'il est administrateur (document « admins/{uid} ») et
+   (2) à quelle fiche de centre il est lié (document « centres/{uid} »,
+   avec repli sur une recherche par e-mail). Chaque issue est affichée
+   au centre, dans le formulaire — jamais un bouton qui semble mort. */
+var authNotice="",resolvedUid="",espaceNoticeUid="",espaceResolving=false;
+function authErrorMsg(error){
+  var code=(error&&error.code)?error.code:"";
+  if(code==="auth/user-not-found")return "Aucun compte n'existe pour cet e-mail : les comptes des centres sont créés par notre équipe lors de l'acceptation du centre. Vérifiez que vous utilisez bien l'e-mail de votre centre — celui déclaré dans votre demande d'inscription.";
+  if(code==="auth/wrong-password"||code==="auth/invalid-credential")return "E-mail ou mot de passe incorrect. Vérifiez la saisie (majuscules, espaces en trop), ou utilisez « Mot de passe oublié » ci-dessous pour réinitialiser votre mot de passe.";
+  if(code==="auth/invalid-email")return "Cette adresse e-mail n'est pas valide : vérifiez son format (ex. centre@exemple.ma).";
+  if(code==="auth/user-disabled")return "Ce compte a été désactivé : contactez l'équipe de l'annuaire.";
+  if(code==="auth/too-many-requests")return "Trop de tentatives de connexion : patientez quelques minutes, puis réessayez.";
+  if(code==="auth/network-request-failed")return "Connexion réseau impossible : vérifiez votre connexion internet, puis réessayez.";
+  if(code==="auth/operation-not-allowed")return "La connexion par e-mail n'est pas activée pour ce site : contactez l'équipe de l'annuaire.";
+  return "Connexion impossible pour le moment ("+(code||"erreur inconnue")+"). Réessayez dans un instant ; si le problème persiste, contactez l'équipe de l'annuaire.";
+}
+function centreFromDocData(dd){
+  if(!dd)return null;
+  var slug=dd.slug||dd.centreSlug||dd.fiche||"";
+  var base=null;
+  CENTRES.forEach(function(x){if(x.slug===slug)base=x;});
+  return base;
+}
+function resolveSignedInUser(user,intent){
+  if(!user||espaceResolving)return;
+  var h=location.hash||"";
+  var onEspace=h.indexOf("espace")>-1,onAdmin=h.indexOf("admin")>-1;
+  if(intent==="auto"&&!onEspace&&!onAdmin){resolvedUid=user.uid;espaceUser=user;return;}
+  espaceResolving=true;espaceUser=user;
+  var db=firebase.firestore();
+  var isAdmin=false,centre=null;
+  var pAdmin=db.collection("admins").doc(user.uid).get().then(function(d){isAdmin=!!d.exists;}).catch(function(){});
+  var pCentre=db.collection("centres").doc(user.uid).get().then(function(d){if(d.exists)centre=centreFromDocData(d.data());}).catch(function(){});
+  Promise.all([pAdmin,pCentre]).then(function(){
+    if(centre)return null;
+    return db.collection("centres").where("email","==",user.email).limit(5).get().then(function(s){s.forEach(function(d){if(!centre)centre=centreFromDocData(d.data());});}).catch(function(){});
+  }).then(function(){
+    espaceResolving=false;
+    var wantAdmin=(intent==="admin")||(intent==="auto"&&onAdmin);
+    var wantEspace=(intent==="espace")||(intent==="auto"&&onEspace);
+    if(wantAdmin){
+      if(isAdmin){resolvedUid=user.uid;authNotice="";adminStartSession("compte");return;}
+      if(centre){resolvedUid=user.uid;authNotice="";toast("Ce compte est un compte de centre, pas un compte administrateur : voici votre Espace centre");espaceStartSession("compte",centre);return;}
+      resolvedUid=user.uid;
+      authNotice='<div class="notice"><b>Ce compte n\'est pas un compte administrateur.</b> L\'e-mail et le mot de passe sont acceptés, mais ce compte n\'a pas les droits d\'administration de l\'annuaire. Si vous gérez un centre, connectez-vous depuis l\'<a href="#/espace" style="font-weight:700">Espace centre</a> ; sinon, contactez l\'équipe de l\'annuaire.</div>';
+      route();return;
+    }
+    if(wantEspace){
+      if(centre){resolvedUid=user.uid;authNotice="";espaceStartSession("compte",centre);return;}
+      if(isAdmin){
+        espaceNoticeUid=user.uid;
+        authNotice='<div class="notice"><b>Vous êtes connecté avec le compte administrateur de l\'annuaire — pas avec un compte de centre.</b> Ce compte ouvre le tableau de bord de l\'équipe, pas l\'Espace centre. Chaque centre, y compris le vôtre, possède son propre compte centre : l\'e-mail du centre déclaré à l\'inscription, avec le mot de passe transmis lors de l\'acceptation — c\'est celui-là qu\'il faut saisir ici. Si le compte centre de votre centre n\'a pas encore été créé et lié à sa fiche, notre équipe doit le faire avant votre première connexion.<p style="margin-top:10px"><a class="btn small" href="#/admin">Ouvrir le tableau de bord de l\'annuaire</a></p></div>';
+        route();return;
+      }
+      resolvedUid=user.uid;
+      authNotice='<div class="notice"><b>Connexion réussie, mais ce compte n\'est encore lié à aucune fiche de centre.</b> Votre e-mail et votre mot de passe sont donc bons — il manque uniquement la liaison entre votre compte et la fiche de votre centre, que notre équipe crée au moment de l\'acceptation. Si votre centre vient d\'être accepté, contactez l\'équipe de l\'annuaire pour activer votre accès : dès la liaison faite, ce même e-mail et ce même mot de passe ouvriront votre espace, sans rien changer.</div>';
+      route();return;
+    }
+    if(centre){resolvedUid=user.uid;espaceStartSession("compte",centre);return;}
+    if(isAdmin){resolvedUid=user.uid;adminStartSession("compte");return;}
+    resolvedUid=user.uid;
+  }).catch(function(){
+    espaceResolving=false;
+    toast("Impossible de vérifier votre compte pour le moment — réessayez dans un instant");
+  });
 }
 function setPending(on){
   espacePending=on;
@@ -789,6 +860,12 @@ function setPending(on){
 }
 function viewEspace(){
   if(espaceCentre){viewEspaceDash();return;}
+  if(!espaceResolving&&resolvedUid===""&&espaceNoticeUid===""){
+    fbWhenReady(function(){
+      var u=(fbReady&&firebase.auth().currentUser)?firebase.auth().currentUser:null;
+      if(u&&resolvedUid!==u.uid&&espaceNoticeUid!==u.uid)resolveSignedInUser(u,"espace");
+    },function(){});
+  }
   var configured=!!FIREBASE_CONFIG.apiKey;
   app.innerHTML='<div class="wrap"><p class="crumb"><a href="#/accueil">Accueil</a> › Espace centre</p>'
   +'<h1 style="font-size:1.8rem">Espace centre</h1>'
@@ -796,12 +873,14 @@ function viewEspace(){
   +'<div class="espace-grid"><div class="card"><span class="badge gold">Réservé aux centres publiés</span>'
   +'<h3 style="margin-top:10px">Se connecter</h3>'
   +'<p style="font-size:.92rem">Utilisez l\'e-mail déclaré lors de votre inscription et le mot de passe transmis par notre équipe lorsque votre centre a été accepté.</p>'
+  +'<p style="font-size:.92rem"><b>Quel e-mail saisir ?</b> Celui de votre centre — l\'adresse professionnelle déclarée dans votre demande d\'inscription. Un e-mail personnel ou le compte administrateur de l\'annuaire n\'ouvrent pas cet espace : chaque centre a le sien, lié à sa seule fiche.</p>'
   +(configured?"":'<div class="notice" style="margin-top:12px"><b>Connexion momentanément indisponible.</b> Réessayez dans quelques instants. Les comptes des centres sont créés par notre équipe au moment de l\'acceptation.</div>')
   +'<form class="login" id="loginForm">'
   +'<div><label for="l-email">E-mail du centre</label><input id="l-email" type="email" autocomplete="username" placeholder="centre@exemple.ma"></div>'
   +'<div><label for="l-pass">Mot de passe</label><input id="l-pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>'
-  +'<div id="loginErr"></div>'
-  +'<div><button class="btn" type="submit" style="width:100%">Se connecter à mon espace</button></div></form>'
+  +'<div id="loginErr">'+authNotice+'</div>'
+  +'<div><button class="btn" type="submit" id="loginBtn" style="width:100%">Se connecter à mon espace</button></div>'
+  +'<div style="text-align:right"><button type="button" class="linklike" id="forgotBtn">Mot de passe oublié ? Recevoir un lien de réinitialisation</button></div></form>'
   +'<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px"><p style="font-size:.92rem;margin:0">Pas encore de compte ? Il n\'y a pas d\'accès libre à cet espace : le compte d\'un centre est créé par notre équipe lorsqu\'il est accepté dans l\'annuaire. Si votre centre n\'est pas encore inscrit, commencez par la <a href="#/inscription" style="font-weight:700">demande d\'inscription</a>.</p></div></div>'
   +'<div><div class="card"><h3>Ce que vous pouvez faire dans votre espace</h3>'
   +'<div class="steps" style="grid-template-columns:1fr;margin-top:12px">'
@@ -816,16 +895,38 @@ function viewEspace(){
     e.preventDefault();
     var email=document.getElementById("l-email").value.trim(),pass=document.getElementById("l-pass").value;
     var err=document.getElementById("loginErr");
+    var btn=document.getElementById("loginBtn");
     if(!email||!pass){err.innerHTML='<div class="notice">Indiquez l\'e-mail de votre centre et votre mot de passe.</div>';return;}
-    if(!fbInit()){err.innerHTML='<div class="notice"><b>Connexion momentanément indisponible.</b> Le service d\'authentification est encore en cours de chargement : attendez quelques secondes puis réessayez.</div>';return;}
-    err.innerHTML="";
-    firebase.auth().signInWithEmailAndPassword(email,pass).catch(function(error){
-      var msg="Connexion impossible : vérifiez l'e-mail et le mot de passe.";
-      if(error&&error.code==="auth/user-not-found")msg="Aucun compte n'existe pour cet e-mail : les comptes sont créés par notre équipe à l'acceptation du centre.";
-      else if(error&&error.code==="auth/wrong-password")msg="Mot de passe incorrect.";
-      else if(error&&error.code==="auth/invalid-credential")msg="E-mail ou mot de passe incorrect.";
-      else if(error&&error.code==="auth/too-many-requests")msg="Trop de tentatives : réessayez dans quelques minutes.";
-      err.innerHTML='<div class="notice">'+msg+"</div>";
+    authNotice="";resolvedUid="";espaceNoticeUid="";
+    btn.disabled=true;btn.textContent="Connexion en cours…";
+    err.innerHTML='<div class="notice">Connexion en cours — chargement du service d\'authentification, puis vérification de votre compte…</div>';
+    fbWhenReady(function(){
+      err.innerHTML='<div class="notice">Connexion en cours — vérification de votre e-mail et de votre mot de passe…</div>';
+      firebase.auth().signInWithEmailAndPassword(email,pass).then(function(cred){
+        err.innerHTML='<div class="notice">Compte reconnu — ouverture de votre espace…</div>';
+        resolveSignedInUser(cred.user,"espace");
+      }).catch(function(error){
+        btn.disabled=false;btn.textContent="Se connecter à mon espace";
+        err.innerHTML='<div class="notice">'+authErrorMsg(error)+"</div>";
+      });
+    },function(){
+      btn.disabled=false;btn.textContent="Se connecter à mon espace";
+      err.innerHTML='<div class="notice"><b>Connexion impossible : le service d\'authentification n\'a pas pu se charger.</b> Vérifiez votre connexion internet, rechargez la page, puis réessayez.</div>';
+    });
+  });
+  document.getElementById("forgotBtn").addEventListener("click",function(){
+    var email=document.getElementById("l-email").value.trim();
+    var err=document.getElementById("loginErr");
+    if(!email){err.innerHTML='<div class="notice">Écrivez d\'abord l\'e-mail de votre centre dans le champ ci-dessus, puis cliquez à nouveau sur « Mot de passe oublié » : le lien de réinitialisation partira à cette adresse.</div>';document.getElementById("l-email").focus();return;}
+    err.innerHTML='<div class="notice">Envoi du lien de réinitialisation en cours…</div>';
+    fbWhenReady(function(){
+      firebase.auth().sendPasswordResetEmail(email).then(function(){
+        err.innerHTML='<div class="success"><b>Lien de réinitialisation envoyé.</b> Ouvrez l\'e-mail reçu à '+esc(email)+', cliquez sur le lien qu\'il contient pour choisir un nouveau mot de passe, puis reconnectez-vous ici avec ce nouveau mot de passe.</div>';
+      }).catch(function(error){
+        err.innerHTML='<div class="notice">'+authErrorMsg(error)+"</div>";
+      });
+    },function(){
+      err.innerHTML='<div class="notice"><b>Envoi impossible : le service d\'authentification n\'a pas pu se charger.</b> Vérifiez votre connexion internet, rechargez la page, puis réessayez.</div>';
     });
   });
   window.scrollTo(0,0);
@@ -1062,11 +1163,18 @@ function adminStartSession(mode){
 function adminLogout(){
   if(fbReady&&firebase.auth().currentUser)firebase.auth().signOut();
   adminMode="";
+  authNotice="";resolvedUid="";espaceNoticeUid="";
   toast("Vous êtes déconnecté de l'administration");
   route();
 }
 function viewAdmin(){
   if(adminMode){viewAdminDash();return;}
+  if(!espaceResolving&&resolvedUid===""){
+    fbWhenReady(function(){
+      var u=(fbReady&&firebase.auth().currentUser)?firebase.auth().currentUser:null;
+      if(u&&resolvedUid!==u.uid)resolveSignedInUser(u,"admin");
+    },function(){});
+  }
   var configured=!!FIREBASE_CONFIG.apiKey;
   app.innerHTML='<div class="wrap"><p class="crumb"><a href="#/accueil">Accueil</a> › Administration</p>'
   +'<h1 style="font-size:1.8rem">Administration de l\'annuaire</h1>'
@@ -1078,8 +1186,8 @@ function viewAdmin(){
   +'<form class="login" id="adminLoginForm">'
   +'<div><label for="ad-email">E-mail administrateur</label><input id="ad-email" type="email" autocomplete="username" placeholder="admin@exemple.ma"></div>'
   +'<div><label for="ad-pass">Mot de passe</label><input id="ad-pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>'
-  +'<div id="adminLoginErr"></div>'
-  +'<div><button class="btn" type="submit" style="width:100%">Ouvrir mon tableau de bord</button></div></form>'
+  +'<div id="adminLoginErr">'+authNotice+'</div>'
+  +'<div><button class="btn" type="submit" id="adminLoginBtn" style="width:100%">Ouvrir mon tableau de bord</button></div></form>'
   +'<div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px"><p style="font-size:.92rem;margin:0">Accès strictement réservé : le tableau de bord ne s\'ouvre qu\'avec le compte administrateur de l\'annuaire (compte Firebase Authentication reconnu par un document dans la collection « admins » de Firestore). Il n\'existe aucun accès libre ni aperçu sans connexion.</p></div></div>'
   +'<div><div class="card"><h3>Ce que vous faites ici</h3>'
   +'<div class="steps" style="grid-template-columns:1fr;margin-top:12px">'
@@ -1094,16 +1202,23 @@ function viewAdmin(){
     e.preventDefault();
     var email=document.getElementById("ad-email").value.trim(),pass=document.getElementById("ad-pass").value;
     var err=document.getElementById("adminLoginErr");
+    var btn=document.getElementById("adminLoginBtn");
     if(!email||!pass){err.innerHTML='<div class="notice">Indiquez l\'e-mail administrateur et le mot de passe.</div>';return;}
-    if(!fbInit()){err.innerHTML='<div class="notice"><b>Connexion momentanément indisponible.</b> Le service d\'authentification est encore en cours de chargement : attendez quelques secondes puis réessayez.</div>';return;}
-    err.innerHTML="";
-    firebase.auth().signInWithEmailAndPassword(email,pass).catch(function(error){
-      var msg="Connexion impossible : vérifiez l'e-mail et le mot de passe.";
-      if(error&&error.code==="auth/user-not-found")msg="Aucun compte n'existe pour cet e-mail.";
-      else if(error&&error.code==="auth/wrong-password")msg="Mot de passe incorrect.";
-      else if(error&&error.code==="auth/invalid-credential")msg="E-mail ou mot de passe incorrect.";
-      else if(error&&error.code==="auth/too-many-requests")msg="Trop de tentatives : réessayez dans quelques minutes.";
-      err.innerHTML='<div class="notice">'+msg+"</div>";
+    authNotice="";resolvedUid="";espaceNoticeUid="";
+    btn.disabled=true;btn.textContent="Connexion en cours…";
+    err.innerHTML='<div class="notice">Connexion en cours — chargement du service d\'authentification, puis vérification de votre compte…</div>';
+    fbWhenReady(function(){
+      err.innerHTML='<div class="notice">Connexion en cours — vérification de votre e-mail et de votre mot de passe…</div>';
+      firebase.auth().signInWithEmailAndPassword(email,pass).then(function(cred){
+        err.innerHTML='<div class="notice">Compte reconnu — ouverture de votre tableau de bord…</div>';
+        resolveSignedInUser(cred.user,"admin");
+      }).catch(function(error){
+        btn.disabled=false;btn.textContent="Ouvrir mon tableau de bord";
+        err.innerHTML='<div class="notice">'+authErrorMsg(error)+"</div>";
+      });
+    },function(){
+      btn.disabled=false;btn.textContent="Ouvrir mon tableau de bord";
+      err.innerHTML='<div class="notice"><b>Connexion impossible : le service d\'authentification n\'a pas pu se charger.</b> Vérifiez votre connexion internet, rechargez la page, puis réessayez.</div>';
     });
   });
   window.scrollTo(0,0);
@@ -1283,14 +1398,6 @@ if(FIREBASE_CONFIG.apiKey){
   (function loadFb(i){
     if(i>=fbScripts.length){
       if(!fbInit())return;
-      function loadCentreForUser(user){
-        firebase.firestore().collection("centres").doc(user.uid).get().then(function(doc){
-          var base=null;
-          if(doc.exists){var dd=doc.data();CENTRES.forEach(function(x){if(x.slug===dd.slug)base=x;});}
-          if(base){espaceStartSession("compte",base);}
-          else{espaceUser=user;toast("Ce compte n'est lié à aucune fiche publiée pour le moment — contactez l'équipe de l'annuaire");if(location.hash.indexOf("espace")>-1)route();}
-        }).catch(function(){toast("Impossible de charger votre fiche — réessayez dans un instant");});
-      }
       /* État des fiches publié : les suspensions décidées par
          l'administrateur (collection « fiches_etat ») s'appliquent
          aussi aux visiteurs. Si la lecture est refusée par les
@@ -1303,14 +1410,14 @@ if(FIREBASE_CONFIG.apiKey){
       firebase.auth().onAuthStateChanged(function(user){
         if(user){
           espaceUser=user;
-          /* Le compte administrateur d'abord : s'il possède un document dans
-             la collection « admins », c'est le tableau de bord de l'équipe
-             qui s'ouvre. Sinon, c'est un compte de centre comme les autres. */
-          firebase.firestore().collection("admins").doc(user.uid).get().then(function(adoc){
-            if(adoc.exists){adminStartSession("compte");}
-            else{loadCentreForUser(user);}
-          }).catch(function(){loadCentreForUser(user);});
+          /* Résolution explicite du compte (voir resolveSignedInUser) :
+             administrateur → tableau de bord, compte de centre → son
+             Espace centre, compte non lié → explication affichée dans
+             le formulaire. Sur les pages publiques, la session est
+             simplement retenue, sans redirection forcée. */
+          if(resolvedUid!==user.uid&&espaceNoticeUid!==user.uid&&!espaceResolving)resolveSignedInUser(user,"auto");
         }else{
+          resolvedUid="";espaceNoticeUid="";
           if(adminMode==="compte"){adminMode="";if(location.hash.indexOf("admin")>-1)route();}
           if(espaceMode==="compte"){
             espaceUser=null;espaceCentre=null;espaceDraft=null;espaceMode="";espacePending=false;
