@@ -617,12 +617,27 @@ function svcShort(s){
   if(s.length>34){var base=s.split("(")[0].trim();if(base.length>=10&&base.length<s.length)return base;}
   return s;
 }
+/* Note d'un centre sur sa carte : les mêmes chiffres réels que sur sa
+   fiche (moyenne + nombre d'avis publiés), chargés depuis la collection
+   « avis » par loadListRatings. Sans avis publié : aucune étoile —
+   jamais d'étoiles vides, qui feraient croire à une note de 0. */
+function cardAvisLine(c){
+  var n=c.ratingCount||0;
+  var link='<a href="#/centre/'+c.slug+'">voir la fiche</a>';
+  if(n>0){
+    var avg=c.ratingAvg||0;
+    var full=Math.round(avg);
+    var avgTxt=avg.toFixed(1).replace(".",",");
+    return '<span class="stars" aria-hidden="true">'+"★".repeat(full)+"☆".repeat(5-full)+'</span><span><b>'+avgTxt+' / 5</b> — '+n+' avis publié'+(n>1?"s":"")+' sur cet annuaire — '+link+'</span>';
+  }
+  return '<span>Avis publiés après relecture — '+link+'</span>';
+}
 function centreCard(c){
   return '<article class="card centre-card" data-href="#/centre/'+c.slug+'">'+coverHTML(c,"cover")
   +avatarHTML(c)
   +'<div class="card-body">'
   +'<h3><a href="#/centre/'+c.slug+'">'+esc(c.name)+'</a></h3>'
-  +'<div class="avis-line"><span class="stars" aria-hidden="true">☆☆☆☆☆</span><span>Avis publiés après relecture — <a href="#/centre/'+c.slug+'">voir la fiche</a></span></div>'
+  +'<div class="avis-line">'+cardAvisLine(c)+'</div>'
   +'<p class="meta">📍 '+esc(c.address)+'</p>'
   +'<p class="meta">🕗 Ouvert 7 j/7 — ven. jusqu\'à 11h30</p>'
   +'<p class="svc-line">'+c.services.slice(0,2).map(function(s){return esc(svcShort(s));}).join(" · ")+(c.services.length>2?" …":"")+'</p>'
@@ -643,7 +658,7 @@ function trackerBlock(){
   +'</div></section>';
 }
 function viewHome(){
-  loadLiveCentres();
+  loadLiveCentres();loadListRatings();
   var cityOpts=CITIES.map(function(c){return '<option value="'+c.slug+'">'+esc(c.name)+" — "+esc(c.region)+"</option>";}).join("");
   var topCities=["Casablanca","Rabat","Marrakech","Agadir","Tanger","Fès","Meknès","Oujda","Kénitra","Tétouan","Laâyoune","Dakhla"];
   app.innerHTML=
@@ -673,7 +688,7 @@ function viewHome(){
   window.scrollTo(0,0);
 }
 function viewCentres(q){
-  loadLiveCentres();
+  loadLiveCentres();loadListRatings();
   var list=CENTRES.filter(function(c){if(c.suspended)return false;if(!q)return true;var h=(c.name+" "+c.city+" "+c.services.join(" ")).toLowerCase();return h.indexOf(q.toLowerCase())>-1;});
   app.innerHTML='<div class="wrap"><p class="crumb"><a href="#/accueil">Accueil</a> › Centres</p><h1 style="font-size:1.8rem">Centres de hijama vérifiés</h1>'
   +'<p class="sec-sub" style="margin-top:8px">Uniquement des centres contrôlés par notre équipe : contact direct, photos des locaux et vérification des critères d\'hygiène avant publication.</p>'
@@ -695,7 +710,7 @@ function viewVilles(){
   window.scrollTo(0,0);
 }
 function viewVille(slug,q){
-  loadLiveCentres();
+  loadLiveCentres();loadListRatings();
   var city=null;CITIES.forEach(function(c){if(c.slug===slug)city=c;});
   if(!city){viewVilles();return;}
   var list=centresOf(slug).filter(function(c){if(!q)return true;return (c.name+" "+c.services.join(" ")).toLowerCase().indexOf(q.toLowerCase())>-1;});
@@ -806,6 +821,42 @@ function loadLiveCentres(){
     }).catch(function(){liveCentresLoaded=false;});
   }catch(e){liveCentresLoaded=false;}
 }
+/* Notes des cartes : la fiche lit ses avis publiés, la liste doit faire
+   pareil — sinon la carte affiche des étoiles vides (note 0). On charge
+   une seule fois tous les avis publiés, on groupe par centre, et on
+   attache moyenne + nombre à l'entrée CENTRES correspondante. La liste
+   n'est re-rendue que si l'on est déjà sur une page de liste. */
+var listRatingsLoaded=false;
+function loadListRatings(){
+  if(listRatingsLoaded||!fbReady)return;
+  listRatingsLoaded=true;
+  try{
+    firebase.firestore().collection("avis").where("statut","==","publie").limit(200).get().then(function(s){
+      var bySlug={};
+      s.forEach(function(d){
+        var a=d.data();if(!a||!a.centreSlug)return;
+        var r=bySlug[a.centreSlug]||{sum:0,count:0};
+        r.sum+=(a.note||0);r.count++;
+        bySlug[a.centreSlug]=r;
+      });
+      var changed=false;
+      Object.keys(bySlug).forEach(function(slug){
+        var r=bySlug[slug];
+        var idx=-1;
+        CENTRES.forEach(function(c,i){if(c.slug===slug)idx=i;});
+        if(idx<0)return;
+        var avg=r.count?r.sum/r.count:0;
+        if(CENTRES[idx].ratingAvg!==avg||CENTRES[idx].ratingCount!==r.count){
+          CENTRES[idx].ratingAvg=avg;CENTRES[idx].ratingCount=r.count;changed=true;
+        }
+      });
+      if(changed){
+        var h=location.hash||"";
+        if(h===""||h==="#/accueil"||h.indexOf("#/centres")===0||h.indexOf("#/ville/")===0)route();
+      }
+    }).catch(function(){listRatingsLoaded=false;});
+  }catch(e){listRatingsLoaded=false;}
+}
 function viewCentre(slug,liveCentre){
   var c=null;
   if(liveCentre){c=liveCentre;}
@@ -858,7 +909,7 @@ function viewCentre(slug,liveCentre){
   +'<div class="card"><h3>Contact</h3>'
   +'<a class="btn" href="tel:'+c.phoneIntl+'" style="width:100%;justify-content:center">📞 Appeler le centre</a>'
   +(waHref?'<a class="btn ghost" href="'+waHref+'" target="_blank" rel="noopener" style="width:100%;justify-content:center;margin-top:8px">💬 Envoyer un message</a>':"")
-  +(c.email?'<a class="btn ghost" href="mailto:'+esc(c.email)+'" style="width:100%;justify-content:center;margin-top:8px">✉️ E-mail</a>':"")
+  +(c.email?'<a class="btn" href="mailto:'+esc(c.email)+'" style="width:100%;justify-content:center;margin-top:8px">✉️ E-mail</a>':"")
   +'<div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost small" type="button" id="shareBtn" style="flex:1">↗ Partager</button><button class="btn ghost small like-btn" type="button" id="likeBtn" style="flex:1" aria-pressed="false">♡ J\'aime</button></div></div>'
   +'<div class="card"><h3>Adresse</h3>'
   +'<a class="mini-map" href="'+esc(c.maps)+'" target="_blank" rel="noopener" aria-label="Voir sur Google Maps"><span class="mini-pin" aria-hidden="true">📍</span></a>'
