@@ -994,6 +994,16 @@ function viewInscription(preselect){
    Firestore (centres/{uid}). Il n'existe aucun
    mode aperçu : sans compte de centre valide, l'espace reste fermé. */
 var FIREBASE_CONFIG={apiKey:"AIzaSyCjYns1LxDDWZmjbqXy5y3qKwUtPVGpXNg",authDomain:"annuaire-hijama.firebaseapp.com",projectId:"annuaire-hijama",storageBucket:"annuaire-hijama.firebasestorage.app",messagingSenderId:"567394770204",appId:"1:567394770204:web:2b3d20e6afcff85c82aed9"};
+/* Envoi des photos des centres vers Google Drive (via une application
+   web Apps Script gratuite — dossier « Annuaire Hijama — Photos
+   centres », compte zouhair.secret@gmail.com ; code dans
+   annuaire-hijama-photo-flow/Code.gs, déploiement dans DEPLOY.md).
+   URL /exec de l'application déployée. VIDE tant que l'application
+   n'est pas déployée : les photos échouent alors visiblement (message
+   en français dans #/espace), sans jamais bloquer l'enregistrement
+   des textes. Aucun secret ici : l'URL /exec est publique par
+   construction (elle ne donne accès qu'au dépôt de photos). */
+var PHOTO_UPLOAD_URL="";
 var fbReady=false,espaceUser=null,espaceCentre=null,espaceDraft=null,espaceMode="",espacePending=false,espaceSvcPhotos={};
 function fbInit(){
   if(fbReady)return true;
@@ -1059,7 +1069,7 @@ function sanitizeDirect(obj){
   return {data:out,dropped:dropped};
 }
 /* Fichiers joints : lecture des objets File (pas seulement leurs noms),
-   pour la conversion WebP et l'envoi vers Storage. */
+   pour la conversion WebP et l'envoi vers Google Drive. */
 function fileOf(id){var inp=document.getElementById(id);return (inp&&inp.files&&inp.files.length)?inp.files[0]:null;}
 function filesOf(id){var inp=document.getElementById(id);var out=[];if(inp&&inp.files)for(var i=0;i<inp.files.length;i++)out.push(inp.files[i]);return out;}
 /* Conversion WebP côté navigateur : les photos des centres sont
@@ -1103,34 +1113,61 @@ function toWebPFile(file){
     }catch(e){finish(null);}
   });
 }
-/* Envoi d'une photo vers Firebase Storage (dossier du centre) ; renvoie
-   son URL de téléchargement, ou null si Storage n'est pas disponible ou
-   si l'envoi échoue. Ne rejette jamais. */
+/* Envoi d'une photo vers Google Drive (via l'application web Apps
+   Script « Annuaire Hijama — Photos centres », PHOTO_UPLOAD_URL) ;
+   renvoie l'URL d'affichage de la photo, ou null si le service n'est
+   pas configuré, si l'envoi échoue ou si la réponse est illisible.
+   Ne rejette jamais.
+   Le POST utilise Content-Type: text/plain (requête simple CORS, sans
+   preflight OPTIONS — Apps Script ne répond pas aux preflight) et lit
+   la réponse JSON ; le « ? » final évite un aller-retour de
+   redirection. Toute réponse non JSON est traitée comme un échec. */
 function uploadCentrePhoto(uid,file,path){
   return new Promise(function(resolve){
     try{
       if(!uid||!file)return resolve(null);
-      if(typeof firebase==="undefined"||typeof firebase.storage!=="function")return resolve(null);
-      var ref=firebase.storage().ref("centres/"+uid+"/"+path);
-      var task=ref.put(file,{contentType:file.type||"image/webp"});
-      var to=setTimeout(function(){try{task.cancel();}catch(e){} resolve(null);},30000);
-      Promise.resolve(task).then(function(){
-        clearTimeout(to);
-        ref.getDownloadURL().then(function(u){resolve(u);}).catch(function(){resolve(null);});
-      }).catch(function(){clearTimeout(to);resolve(null);});
+      if(typeof PHOTO_UPLOAD_URL!=="string"||!PHOTO_UPLOAD_URL)return resolve(null);
+      var reader=new FileReader();
+      var done=false;
+      var to=setTimeout(function(){if(!done){done=true;try{reader.abort();}catch(e){} resolve(null);}},45000);
+      reader.onload=function(){
+        if(done)return;
+        try{
+          var du=reader.result||"";
+          var comma=du.indexOf(",");
+          var b64=comma>=0?du.slice(comma+1):"";
+          if(!b64){done=true;clearTimeout(to);resolve(null);return;}
+          /* Un seul dossier Drive pour tous les centres : le nom de
+             fichier porte l'uid du centre pour éviter toute collision. */
+          var fname=uid+"_"+String(path||"photo").replace(/[\/\\]+/g,"-");
+          var body=JSON.stringify({centre:uid,kind:String(path||"photo").replace(/[\/\\]+/g,"-"),name:fname,mimeType:file.type||"image/webp",data:b64});
+          var ep=PHOTO_UPLOAD_URL;
+          if(ep.indexOf("?")<0)ep+="?";
+          fetch(ep,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:body,redirect:"follow"})
+            .then(function(r){return r.text();})
+            .then(function(t){
+              if(done)return;done=true;clearTimeout(to);
+              var o=null;try{o=JSON.parse(t);}catch(e){o=null;}
+              if(o&&o.ok&&o.url)resolve(o.url);else resolve(null);
+            })
+            .catch(function(){if(!done){done=true;clearTimeout(to);resolve(null);}});
+        }catch(e){if(!done){done=true;clearTimeout(to);resolve(null);}}
+      };
+      reader.onerror=function(){if(!done){done=true;clearTimeout(to);resolve(null);}};
+      reader.readAsDataURL(file);
     }catch(e){resolve(null);}
   });
 }
-/* Conversion WebP + envoi Storage de toutes les photos jointes.
-   Renvoie {urls:{cover,logo,shop:[],services:{}},failed:[],storageAvailable}.
+/* Conversion WebP + envoi Drive de toutes les photos jointes.
+   Renvoie {urls:{cover,logo,shop:[],services:{}},failed:[],driveAvailable}.
    Ne rejette jamais : une photo en échec ne bloque pas l'enregistrement
    des textes (son nom de fichier est conservé). */
 function processPhotoUploads(uid,files){
   return new Promise(function(resolve){
     var urls={cover:null,logo:null,shop:[],services:{}};
     var failed=[];
-    var storageAvailable=false;
-    try{storageAvailable=(typeof firebase!=="undefined"&&typeof firebase.storage==="function");}catch(e){storageAvailable=false;}
+    var driveAvailable=false;
+    try{driveAvailable=(typeof PHOTO_UPLOAD_URL==="string"&&PHOTO_UPLOAD_URL.length>0);}catch(e){driveAvailable=false;}
     var jobs=[];
     function addJob(kind,key,file,base){if(file)jobs.push({kind:kind,key:key,file:file,base:base});}
     addJob("cover","cover",files.cover,"cover");
@@ -1138,11 +1175,11 @@ function processPhotoUploads(uid,files){
     addJob("shop","façade",files.shopExterior,"shop/exterieur");
     (files.shopInterior||[]).forEach(function(f,i){addJob("shop","intérieur "+(i+1),f,"shop/interieur-"+(i+1));});
     (files.services||[]).forEach(function(s){addJob("service",s.name,s.file,"services/"+citySlug(s.name));});
-    if(!jobs.length){resolve({urls:urls,failed:failed,storageAvailable:storageAvailable});return;}
-    if(!storageAvailable){jobs.forEach(function(j){failed.push(j.key||j.kind);});resolve({urls:urls,failed:failed,storageAvailable:false});return;}
+    if(!jobs.length){resolve({urls:urls,failed:failed,driveAvailable:driveAvailable});return;}
+    if(!driveAvailable){jobs.forEach(function(j){failed.push(j.key||j.kind);});resolve({urls:urls,failed:failed,driveAvailable:false});return;}
     var finished=false,pending=jobs.length;
-    var timer=setTimeout(function(){if(!finished){finished=true;failed.push("photos");resolve({urls:urls,failed:failed,storageAvailable:storageAvailable});}},40000);
-    function oneDone(){pending--;if(pending<=0&&!finished){finished=true;clearTimeout(timer);resolve({urls:urls,failed:failed,storageAvailable:storageAvailable});}}
+    var timer=setTimeout(function(){if(!finished){finished=true;failed.push("photos");resolve({urls:urls,failed:failed,driveAvailable:driveAvailable});}},90000);
+    function oneDone(){pending--;if(pending<=0&&!finished){finished=true;clearTimeout(timer);resolve({urls:urls,failed:failed,driveAvailable:driveAvailable});}}
     jobs.forEach(function(job){
       toWebPFile(job.file).then(function(webp){
         var ext="webp";
@@ -1568,7 +1605,7 @@ function viewEspaceDash(){
       var shopInterior=fileNamesOf("d-shop-interior");
       var upd={name:name,city:cityName,address:document.getElementById("d-addr").value.trim(),phone:phone,maps:document.getElementById("d-maps").value.trim(),desc:document.getElementById("d-desc").value.trim(),services:services,hours:hours,social:soc,coverFile:fileNamesOf("d-cover"),logoFile:fileNamesOf("d-logo"),servicePhotos:svcPhotos,newServicePhotos:JSON.parse(JSON.stringify(svcPhotos)),shopPhotos:{exterior:shopExterior,interior:shopInterior}};
       /* Photos à envoyer : les fichiers joints (pas seulement leurs noms).
-         Ils seront convertis en WebP puis envoyés vers Storage ; leurs
+         Ils seront convertis en WebP puis envoyés vers Google Drive ; leurs
          URLs remplaceront les noms dans la fiche publique. */
       var photoFiles={cover:fileOf("d-cover"),logo:fileOf("d-logo"),shopExterior:fileOf("d-shop-exterior"),shopInterior:filesOf("d-shop-interior"),services:svcRows.filter(function(r){return r.file;}).map(function(r){return {name:r.name,file:r.file};})};
       var ch=[];
@@ -1652,7 +1689,7 @@ function viewEspaceDash(){
                faire échouer l'enregistrement des textes. */
             var cleanUpd=sanitizeDirect(upd);
             var safeUpd=cleanUpd.data;
-            /* Photos d'abord : conversion WebP + envoi vers Storage. Les
+            /* Photos d'abord : conversion WebP + envoi vers Google Drive. Les
                URLs obtenues sont ensuite écrites dans la fiche ; si une
                photo ne part pas, les textes sont quand même enregistrés
                (avec le nom du fichier) et un message l'indique. On relit
@@ -1662,7 +1699,7 @@ function viewEspaceDash(){
             Promise.all([processPhotoUploads(user.uid,photoFiles),docP]).then(function(res){
               saveFirestore(res[0],res[1]);
             }).catch(function(){
-              saveFirestore({urls:{cover:null,logo:null,shop:[],services:{}},failed:["photos"],storageAvailable:false},null);
+              saveFirestore({urls:{cover:null,logo:null,shop:[],services:{}},failed:["photos"],driveAvailable:false},null);
             });
             function saveFirestore(photoRes,docSnap){
               try{
@@ -2042,7 +2079,7 @@ document.addEventListener("click",function(e){
 /* Firebase (Espace centre) : les SDK ne sont chargés que si la clé API du
    projet « annuaire-hijama » est renseignée dans FIREBASE_CONFIG ci-dessus. */
 if(FIREBASE_CONFIG.apiKey){
-  var fbScripts=["https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js","https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js","https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js","https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"];
+  var fbScripts=["https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js","https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js","https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"];
   (function loadFb(i){
     if(i>=fbScripts.length){
       if(!fbInit())return;
