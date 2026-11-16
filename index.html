@@ -133,23 +133,20 @@ section.block{padding:42px 0 10px}
 .fiche-cover img{width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block}
 .fiche-cover.cover-none{display:grid;place-items:center}
 .fiche-cover.cover-none img{width:110px;height:auto;object-fit:contain}
-.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:10px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,220px));justify-content:center;gap:10px;margin-top:10px}
 .gallery a{display:block;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
 .gallery img{width:100%;height:96px;object-fit:cover;display:block}
-/* Slider des photos par service (fiche publique) : défilement horizontal
-   à la main (boutons) ou au doigt (glisser), un service = une carte. */
-.svc-slider{position:relative;margin-top:10px}
-.svc-track{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 2px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
-.svc-track::-webkit-scrollbar{height:6px}
-.svc-track::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
-.svc-slide{flex:0 0 218px;scroll-snap-align:start;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+/* Grille des photos par service (fiche publique) : grille centrée et
+   équilibrée — les cartes remplissent la ligne et se replient
+   proprement sur mobile, sans défilement ni boutons. */
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:10px}
+.svc-slide{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
 .svc-slide img{width:100%;height:132px;object-fit:cover;display:block}
 .svc-slide .svc-ph{height:132px;display:grid;place-items:center;background:linear-gradient(140deg,var(--green-soft),var(--surface2));color:var(--green);font-size:2rem}
 .svc-slide .svc-cap{padding:10px 12px;font-weight:700;font-size:.92rem;line-height:1.35}
 .svc-slide .svc-cap small{display:block;font-weight:600;color:var(--ink2);font-size:.8rem;margin-top:3px}
-.svc-nav{display:flex;gap:8px;margin-top:4px}
-.svc-nav .btn{flex:1}
-@media(max-width:700px){.svc-slide{flex-basis:200px}}
+@media(max-width:560px){.svc-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}}
+@media(max-width:380px){.svc-grid{grid-template-columns:1fr}}
 /* Réseaux sociaux d'un centre (fiche publique) */
 .social-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .social-links a{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:99px;padding:8px 14px;font-weight:700;font-size:.9rem;color:var(--ink);text-decoration:none;background:var(--surface)}
@@ -341,7 +338,7 @@ footer.site a{color:var(--ink2);display:block;padding:4px 0;min-height:32px}
 button:disabled{opacity:.6;cursor:wait}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;scroll-behavior:auto!important}}
 /* Visionneuse photo (lightbox) — fiche publique du centre : clic sur
-   n'importe quelle photo (couverture, galerie, slider des services) pour
+   n'importe quelle photo (couverture, galerie, grille des services) pour
    l'agrandir, puis navigation par flèches sans fermer. */
 .lb{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:18px}
 .lb.open{display:flex}
@@ -480,7 +477,7 @@ function avatarHTML(c,big){
   return '<div class="centre-id"><span class="centre-avatar'+(big?" big":"")+'"><img src="'+src+'" alt="Logo / photo de profil — '+esc(c.name)+'" loading="lazy"></span></div>';
 }
 /* Réseaux sociaux d'un centre : liens affichés sur la fiche publique,
-   uniquement ceux que le centre a renseignés (et validés par l'admin). */
+   uniquement ceux que le centre a renseignés. */
 function socialHTML(c){
   var s=c.social||{};
   var links=[];
@@ -490,11 +487,11 @@ function socialHTML(c){
   if(!links.length)return "";
   return '<div class="social-links" aria-label="Réseaux sociaux du centre">'+links.join("")+'</div>';
 }
-/* Slider des photos par service (fiche publique) : chaque service a sa carte,
+/* Grille des photos par service (fiche publique) : chaque service a sa carte,
    avec sa photo si le centre en a joint une, sinon un emplacement propre.
    Ordre des photos : photo jointe au service → photo de la galerie
    (ancien format) → emplacement. */
-function serviceSliderHTML(c){
+function serviceGridHTML(c){
   var svcs=c.services||[];
   if(!svcs.length)return "";
   var photos=c.photos||[];
@@ -508,9 +505,8 @@ function serviceSliderHTML(c){
     return '<article class="svc-slide">'+media+cap+'</article>';
   }).join("");
   return '<section class="card" aria-label="Photos des services"><h3 style="margin-top:0">Les services en images</h3>'
-    +'<p style="color:var(--ink2);margin:4px 0 0;font-size:.9rem">Chaque service, avec sa photo. Faites défiler pour tout voir.</p>'
-    +'<div class="svc-slider"><div class="svc-track" id="svcTrack">'+slides+'</div>'
-    +'<div class="svc-nav"><button class="btn ghost" type="button" id="svcPrev" aria-label="Photos précédentes">← Précédent</button><button class="btn ghost" type="button" id="svcNext" aria-label="Photos suivantes">Suivant →</button></div></div></section>';
+    +'<p style="color:var(--ink2);margin:4px 0 0;font-size:.9rem">Chaque service, avec sa photo. Cliquez sur une photo pour l\'agrandir.</p>'
+    +'<div class="svc-grid" id="svcGrid">'+slides+'</div></section>';
 }
 /* Visionneuse photo (lightbox) de la fiche publique : une seule liste de
    photos par centre — couverture d'abord, puis photos du centre, puis
@@ -633,7 +629,7 @@ function viewHome(){
   +'<div class="steps"><div class="step"><div class="num">1</div><h3>Demande d\'inscription</h3><p>Le centre remplit le formulaire avec ses coordonnées et ses services.</p></div>'
   +'<div class="step"><div class="num">2</div><h3>Contact et photos</h3><p>Nous contactons le centre et demandons des photos réelles de ses locaux et de ses salles de soins.</p></div>'
   +'<div class="step"><div class="num">3</div><h3>Contrôle d\'hygiène</h3><p>Matériel à usage unique, stérilisation, gestion des déchets : la fiche n\'avance que si les critères sont remplis.</p></div>'
-  +'<div class="step"><div class="num">4</div><h3>Publication + espace personnel</h3><p>Nous publions la fiche, puis le centre reçoit son propre espace : il y gère sa fiche et y ajoute ses autres services, chaque modification étant validée par notre équipe avant de paraître. Aucune auto-publication, aucune place achetée.</p></div></div></section>'
+  +'<div class="step"><div class="num">4</div><h3>Publication + espace personnel</h3><p>Nous publions la fiche, puis le centre reçoit son propre espace : il y gère sa fiche et y ajoute ses autres services ; chaque modification est publiée immédiatement sur sa fiche publique. Aucune place achetée.</p></div></div></section>'
   +adSlot(true)
   +'<section class="block"><div class="sec-head"><h2>Guides et conseils</h2><a href="#/guides">Tous les guides →</a></div><div class="grid c3">'
   +GUIDES.slice(0,3).map(function(g){return '<article class="card"><span class="badge grey">'+esc(g.tag)+'</span><h3 style="margin-top:8px"><a href="#/guide/'+g.slug+'">'+esc(g.title)+'</a></h3><p>'+esc(g.intro)+'</p><a href="#/guide/'+g.slug+'" style="font-weight:700">Lire le guide →</a></article>';}).join("")
@@ -741,7 +737,7 @@ function viewCentre(slug,liveCentre){
   +'<div class="actions" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px"><a class="btn" href="tel:'+c.phoneIntl+'">📞 Appeler le centre</a><a class="btn ghost" href="'+c.maps+'" target="_blank" rel="noopener">🗺️ Itinéraire Google Maps</a></div>'+socialHTML(c)+'</div>'
   +adSlot(false)
   +'<div class="card" style="margin-top:16px"><h3>Services proposés</h3><div class="taglist">'+c.services.map(function(s){return '<span class="tag">'+esc(s)+"</span>";}).join("")+'</div><p style="font-size:.88rem">Les tarifs sont affichés par le centre sur son propre site et communiqués lors de la prise de rendez-vous.</p></div>'
-  +serviceSliderHTML(c)
+  +serviceGridHTML(c)
   +((c.photos&&c.photos.length)?'<div class="card" style="margin-top:16px"><h3>Photos du centre</h3><p>Photos transmises par le centre et relues par notre équipe avant publication.</p><div class="gallery">'+c.photos.map(function(p,i){return '<a href="'+p+'" target="_blank" rel="noopener"><img src="'+p+'" alt="Photo '+(i+1)+" — "+esc(c.name)+'" loading="lazy"></a>';}).join("")+'</div></div>':"")
   +'<div class="card" id="avisCard" style="margin-top:16px"><span class="badge gold">Avis de l\'annuaire</span><h3 style="margin-top:8px">Les avis de nos visiteurs</h3>'
   +'<p>Les avis publiés ici sont <b>ceux de cet annuaire</b> — déposés sur cette page, relus par notre équipe avant publication. Nous n\'importons ni n\'affichons les avis d\'autres plateformes.</p>'
@@ -755,7 +751,7 @@ function viewCentre(slug,liveCentre){
   +'<div><label for="a-text">Votre avis *</label><textarea id="a-text" placeholder="Accueil, propreté, déroulement de la séance, suivi… Racontez votre expérience."></textarea></div>'
   +'<label class="check"><input type="checkbox" id="a-visit"><span><b>Avis réel :</b> je confirme avoir réellement effectué une séance dans ce centre. Les avis de complaisance ou déposés par le centre lui-même sont refusés. *</span></label>'
   +'<div class="notice">Votre avis est <b>envoyé directement à notre équipe</b> dès l\'envoi du formulaire. Il sera relu puis publié par notre équipe — jamais automatiquement.</div>'
-  +'<div><button class="btn" type="submit" id="avisSubmit" style="width:100%">Envoyer mon avis pour relecture</button></div></form></div></div></div>'
+  +'<div style="text-align:center"><button class="btn" type="submit" id="avisSubmit">Envoyer mon avis pour relecture</button></div></form></div></div></div>'
   +'<aside><div class="card"><h3>Horaires d\'ouverture</h3><table class="hours" style="margin-top:8px">'+c.hours.map(function(h){return "<tr><td>"+h[0]+"</td><td>"+h[1]+"</td></tr>";}).join("")+"</table></div>"
   +'<div class="card" style="margin-top:16px"><h3>👁 Cette fiche en chiffres</h3><div class="viewstats">'
   +'<div class="row"><span class="lbl">Vues de la fiche</span><span class="val">—<small>comptage dès le lancement</small></span></div>'
@@ -764,22 +760,12 @@ function viewCentre(slug,liveCentre){
   +'<div class="row"><span class="lbl">Avis de l\'annuaire publiés</span><span class="val" id="statAvisCount">—</span></div></div>'
   +'<p style="font-size:.88rem;margin-top:10px">Combien de personnes ont vu cette fiche et combien y sont entrées : ces compteurs démarrent avec le lancement officiel du site, sur son domaine. Aucun chiffre n\'est affiché avant de pouvoir être réellement compté.</p></div>'
   +'<div class="card" style="margin-top:16px"><h3>Fiche vérifiée</h3><p>Cette fiche a été créée par l\'équipe de l\'annuaire après contact avec le centre, réception de photos de ses locaux et contrôle des critères d\'hygiène.</p><a href="#/verification" style="font-weight:700">Notre processus de vérification →</a></div>'
-  +'<div class="own-space" style="margin-top:16px"><span aria-hidden="true" style="font-size:1.3rem;line-height:1">🔑</span><p style="margin:0"><b>C\'est votre centre ?</b> Ce centre a son propre Espace centre, réservé à son responsable : il y modifie cette fiche — informations, horaires, visuels — et y ajoute ses autres services s\'il en propose. Chaque modification est validée par notre équipe avant publication.<br><a href="#/espace" style="font-weight:700">Ouvrir mon Espace centre →</a></p></div>'
+  +'<div class="own-space" style="margin-top:16px"><span aria-hidden="true" style="font-size:1.3rem;line-height:1">🔑</span><p style="margin:0"><b>C\'est votre centre ?</b> Ce centre a son propre Espace centre, réservé à son responsable : il y modifie cette fiche — informations, horaires, visuels — et y ajoute ses autres services s\'il en propose. Chaque modification est publiée immédiatement sur sa fiche publique.<br><a href="#/espace" style="font-weight:700">Ouvrir mon Espace centre →</a></p></div>'
   +adSlot(true)+"</aside></div>"+trackerBlock()+"</div>";
   var goA=document.getElementById("goAvis");
   if(goA)goA.addEventListener("click",function(){var el=document.getElementById("avisCard");if(el)el.scrollIntoView({behavior:"smooth",block:"start"});});
-  /* Slider des photos par service : boutons Précédent / Suivant (la piste
-     défile aussi au doigt sur mobile). Un clic = une carte. */
-  var svcTrack=document.getElementById("svcTrack");
-  if(svcTrack){
-    var svcStep=function(){var s=svcTrack.querySelector(".svc-slide");return s?s.offsetWidth+12:230;};
-    var svcScroll=function(dir){var step=svcStep();if(typeof svcTrack.scrollBy==="function")svcTrack.scrollBy({left:dir*step,behavior:"smooth"});else svcTrack.scrollLeft+=dir*step;};
-    var svcPrev=document.getElementById("svcPrev"),svcNext=document.getElementById("svcNext");
-    if(svcPrev)svcPrev.addEventListener("click",function(){svcScroll(-1);});
-    if(svcNext)svcNext.addEventListener("click",function(){svcScroll(1);});
-  }
   /* Visionneuse : un clic sur n'importe quelle photo de la fiche
-     (couverture, galerie « Photos du centre », slider des services)
+     (couverture, galerie « Photos du centre », grille des services)
      l'ouvre en grand dans la visionneuse, avec navigation par flèches
      sans fermer. Les cartes sans photo (emplacement) ne s'ouvrent pas. */
   (function(){
@@ -787,7 +773,7 @@ function viewCentre(slug,liveCentre){
     if(!lbList.length)return;
     var cov=document.querySelector(".fiche-cover img");
     if(cov&&c.cover)cov.addEventListener("click",function(){var ix=lbIndexOf(lbList,c.cover);if(ix>-1)lbOpen(lbList,ix);});
-    document.querySelectorAll("#svcTrack .svc-slide img").forEach(function(im){
+    document.querySelectorAll("#svcGrid .svc-slide img").forEach(function(im){
       im.addEventListener("click",function(){var ix=lbIndexOf(lbList,im.getAttribute("src"));if(ix>-1)lbOpen(lbList,ix);});
     });
     document.querySelectorAll(".gallery a").forEach(function(a){
@@ -997,12 +983,14 @@ function viewInscription(preselect){
    Chaque centre accepté dans l'annuaire dispose de son propre espace :
    connexion par e-mail + mot de passe (Firebase Authentication, projet
    « annuaire-hijama »), fiche modifiable, ajout de services, visuels
-   (couverture, logo, photos des services) — et aucune modification
-   publiée directement : elle part en relecture, l'équipe valide.
+   (couverture, logo, photos des services) — et toute modification
+   est publiée directement sur sa fiche publique, sans validation.
+   Seul un centre pas encore accepté passe par une demande en
+   relecture (centres/{uid}/mises_a_jour).
    La clé API du projet « annuaire-hijama » est renseignée ci-dessous
    (FIREBASE_CONFIG) : la connexion est réelle, par Firebase
-   Authentication, et les modifications envoyées sont enregistrées
-   dans Firestore (centres/{uid}/mises_a_jour). Il n'existe aucun
+   Authentication, et les modifications sont enregistrées dans
+   Firestore (centres/{uid}). Il n'existe aucun
    mode aperçu : sans compte de centre valide, l'espace reste fermé. */
 var FIREBASE_CONFIG={apiKey:"AIzaSyCjYns1LxDDWZmjbqXy5y3qKwUtPVGpXNg",authDomain:"annuaire-hijama.firebaseapp.com",projectId:"annuaire-hijama",storageBucket:"annuaire-hijama.firebasestorage.app",messagingSenderId:"567394770204",appId:"1:567394770204:web:2b3d20e6afcff85c82aed9"};
 var fbReady=false,espaceUser=null,espaceCentre=null,espaceDraft=null,espaceMode="",espacePending=false,espaceSvcPhotos={};
@@ -1038,6 +1026,27 @@ function fbAddDoc(col,data){
 }
 function cloneCentre(c){return JSON.parse(JSON.stringify(c));}
 function fileNamesOf(id){var inp=document.getElementById(id);if(!inp||!inp.files||!inp.files.length)return "";var n=[];for(var i=0;i<inp.files.length;i++)n.push(inp.files[i].name);return n.join(", ");}
+/* Nettoyage d'une fiche avant écriture Firestore : aucune donnée de
+   fichier (data:) ni aucune valeur démesurée ne part jamais — seuls les
+   noms de fichiers sont enregistrés. Les champs écartés sont signalés
+   (liste) pour que l'utilisateur le voie, mais l'écriture des champs
+   texte n'est jamais bloquée par une photo. */
+function sanitizeDirect(obj){
+  var dropped=[];
+  function clean(v,path){
+    if(typeof v==="string"){
+      if(v.indexOf("data:")===0||v.length>100000){dropped.push(path);return "";}
+      return v;
+    }
+    if(Array.isArray(v))return v.map(function(x,i){return clean(x,path+"["+i+"]");});
+    if(v&&typeof v==="object"&&Object.getPrototypeOf(v)===Object.prototype){
+      var o={};Object.keys(v).forEach(function(k){o[k]=clean(v[k],path+"."+k);});return o;
+    }
+    return v;
+  }
+  var out={};Object.keys(obj).forEach(function(k){out[k]=clean(obj[k],k);});
+  return {data:out,dropped:dropped};
+}
 function bindPicked(ids){ids.forEach(function(id){
   var inp=document.getElementById(id),zone=document.getElementById(id+"-picked");
   if(!inp||!zone)return;
@@ -1084,7 +1093,7 @@ function hourRowHTML(h,i){
     +'</div>';
 }
 /* Ligne de service : nom du service + sa photo, dans la même ligne.
-   La photo jointe ici est celle du slider public « Les services en images ».
+   La photo jointe ici est celle de la grille publique « Les services en images ».
    Un service sans photo affiche une carte propre avec son nom. */
 function svcRowHTML(name,photoLabel){
   return '<div class="svc-row svc-slot">'
@@ -1188,7 +1197,7 @@ function setPending(on){
   var bar=document.getElementById("pendingBar");if(bar)bar.style.display=on?"block":"none";
   var sp=document.getElementById("statPending");if(sp)sp.textContent=on?"En relecture":"Aucune";
   var btn=document.getElementById("d-send");
-  if(btn){btn.disabled=on;btn.textContent=on?"✓ Demande envoyée — en attente de validation":"Envoyer mes modifications pour validation";}
+  if(btn){btn.disabled=on;btn.textContent=on?"✓ Enregistré":"Enregistrer";}
 }
 function viewEspace(){
   if(espaceCentre){viewEspaceDash();return;}
@@ -1217,9 +1226,9 @@ function viewEspace(){
   +'<div><div class="card"><h3>Ce que vous pouvez faire dans votre espace</h3>'
   +'<div class="steps" style="grid-template-columns:1fr;margin-top:12px">'
   +'<div class="step"><div class="num">1</div><h3>Vos informations</h3><p>Nom, adresse, téléphone, lien Google Maps, horaires et présentation : corrigez ce qui a changé dans votre centre.</p></div>'
-  +'<div class="step"><div class="num">2</div><h3>Vos autres services</h3><p>Vous proposez un service en plus de la hijama — massage, acupuncture, alignement, autre soin ? Ajoutez-le vous-même, avec sa description et sa photo : il rejoint votre fiche après validation. Retirez aussi ceux que vous ne proposez plus.</p></div>'
+  +'<div class="step"><div class="num">2</div><h3>Vos autres services</h3><p>Vous proposez un service en plus de la hijama — massage, acupuncture, alignement, autre soin ? Ajoutez-le vous-même, avec sa description et sa photo : il rejoint votre fiche immédiatement. Retirez aussi ceux que vous ne proposez plus.</p></div>'
   +'<div class="step"><div class="num">3</div><h3>Vos visuels</h3><p>Photo de couverture, logo / photo de profil et photos de vos services : les trois emplacements de votre fiche, réunis au même endroit.</p></div>'
-  +'<div class="step"><div class="num">4</div><h3>Validation par l\'équipe</h3><p>Vous envoyez vos modifications ; elles n\'apparaissent sur le site qu\'après acceptation par notre équipe, comme à l\'inscription.</p></div>'
+  +'<div class="step"><div class="num">4</div><h3>Publication immédiate</h3><p>Vous enregistrez vos modifications ; elles sont publiées immédiatement sur votre fiche publique, sans validation par notre équipe, sans attente.</p></div>'
   +'</div></div>'
   +'<div class="notice" style="margin-top:16px"><b>Pas encore inscrit ?</b> L\'espace se crée lors de l\'acceptation de votre centre : déposez d\'abord votre <a href="#/inscription" style="font-weight:700">demande d\'inscription</a> avec l\'e-mail de votre centre — il deviendra l\'identifiant de votre compte.</div>'
   +"</div></div></div>";
@@ -1293,7 +1302,7 @@ function viewEspaceDash(){
   +'<div><label for="d-soc-ig">Instagram</label><input id="d-soc-ig" type="url" value="'+esc(soc.instagram||"")+'" placeholder="https://www.instagram.com/votre-centre"></div>'
   +'<div><label for="d-soc-tt">TikTok</label><input id="d-soc-tt" type="url" value="'+esc(soc.tiktok||"")+'" placeholder="https://www.tiktok.com/@votre-centre"></div>'
   +'</div></div>'
-  +'<div class="card" id="dashServices"><h3>Mes services</h3><p style="font-size:.9rem">La liste publiée sur votre fiche — uniquement la vôtre. Chaque ligne est un service <b>et sa photo</b> : corrigez un intitulé, retirez une ligne, ou ajoutez-en une autre. La photo jointe à un service est celle qui apparaît avec lui sur votre fiche publique, dans le slider « Les services en images ».</p>'
+  +'<div class="card" id="dashServices"><h3>Mes services</h3><p style="font-size:.9rem">La liste publiée sur votre fiche — uniquement la vôtre. Chaque ligne est un service <b>et sa photo</b> : corrigez un intitulé, retirez une ligne, ou ajoutez-en une autre. La photo jointe à un service est celle qui apparaît avec lui sur votre fiche publique, dans la grille « Les services en images ».</p>'
   +'<div id="svcList" style="display:grid;gap:10px;margin-top:12px">'
   +svcRowsHTML(d.services,d.servicePhotos||{})
   +'</div>'
@@ -1324,8 +1333,8 @@ function viewEspaceDash(){
   +'<span class="formats">Formats acceptés : JPG, PNG ou WebP — salles de soins, accueil, équipements</span>'
   +'<span class="picked" id="d-shop-interior-picked"></span></div>'
   +'</fieldset>'
-  +'<div class="card"><h3>Envoyer mes modifications</h3><p style="font-size:.92rem">Rien ne change directement sur le site : votre demande part chez notre équipe, qui la relit et la valide — exactement comme lors de votre inscription. Un fichier récapitulatif de vos modifications est préparé en même temps, pour le conserver.</p>'
-  +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="btn" type="submit" id="d-send">Envoyer mes modifications pour validation</button><button class="btn ghost" type="button" id="d-reset">Réinitialiser le formulaire</button></div>'
+  +'<div class="card"><h3>Enregistrer mes modifications</h3><p style="font-size:.92rem">Vos modifications sont publiées immédiatement sur votre fiche publique — sans validation par notre équipe, sans attente. Un fichier récapitulatif de vos modifications est préparé en même temps, pour le conserver.</p>'
+  +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="btn" type="submit" id="d-send">Enregistrer</button><button class="btn ghost" type="button" id="d-reset">Réinitialiser le formulaire</button></div>'
   +'<div id="dashResult" style="margin-top:14px"></div></div>'
   +'</form></div>'
   +'<aside><div class="card" style="margin-bottom:16px"><h3>Mon espace — accès rapide</h3><p style="font-size:.9rem">Tout ce qui concerne votre centre, au même endroit, dans votre espace à vous :</p><div style="display:grid;gap:8px;margin-top:10px"><button class="btn ghost small" type="button" id="qaInfos">✏️ Modifier mes informations</button><button class="btn small" type="button" id="qaSvc">＋ Ajouter un autre service</button><button class="btn ghost small" type="button" id="qaVisuels">🖼️ Changer mes visuels</button></div></div>'
@@ -1335,7 +1344,7 @@ function viewEspaceDash(){
   +'<div class="row"><span class="lbl">Services publiés</span><b id="statSvc">'+d.services.length+'</b></div>'
   +'<div class="row"><span class="lbl">Portée de cet espace</span><b style="font-size:.88rem">Votre fiche uniquement</b></div>'
   +'<div class="row"><span class="lbl">Mise à jour en attente</span><b id="statPending">Aucune</b></div>'
-  +'</div><p style="font-size:.88rem;margin-top:10px">Une modification envoyée n\'apparaît sur votre fiche qu\'après acceptation par l\'équipe de l\'annuaire.</p>'
+  +'</div><p style="font-size:.88rem;margin-top:10px">Une modification enregistrée apparaît immédiatement sur votre fiche publique.</p>'
   +'<p style="margin-top:10px"><a href="#/centre/'+c.slug+'" style="font-weight:700">Voir ma fiche telle que la voient les visiteurs →</a></p></div>'
   +'<div style="margin-top:22px"><h3 style="font-size:1.05rem;margin-bottom:4px">Aperçu de ma carte</h3><p style="font-size:.88rem;color:var(--ink2);margin:0 0 10px">Telle qu\'elle apparaît dans les listes du site, avec vos modifications en cours :</p><div id="dashPreview"></div></div>'
   +adSlot(true)
@@ -1430,8 +1439,8 @@ function viewEspaceDash(){
       });
       /* Photos : une par service (lues dans les lignes de services) et les
          photos du centre (façade + intérieur). Seuls les noms de fichiers
-         partent dans la demande — l'équipe joint les fichiers à la fiche
-         après validation. */
+         sont enregistrés pour l'instant — les fichiers eux-mêmes ne sont
+         pas envoyés (aucune étape d'upload pour le moment). */
       var svcPhotos={};
       svcRows.forEach(function(r){if(r.photo)svcPhotos[r.name]=r.photo;});
       var shopExterior=fileNamesOf("d-shop-exterior");
@@ -1457,21 +1466,31 @@ function viewEspaceDash(){
       /* Centre déjà accepté et publié : sa modification est publiée
          directement, sans validation. Sinon, elle part en relecture. */
       var isPublished=!!(c&&c.verified);
-      var tail=isPublished
-        ?["","Statut : publiée directement — votre fiche publique est à jour dès maintenant."]
-        :["","Statut : en attente de relecture et de validation par l'équipe de l'annuaire.","Aucune modification n'est publiée avant acceptation."];
-      var lines=["MISE À JOUR DE LA FICHE — ESPACE CENTRE","======================================","Centre : "+c.name+" ("+c.slug+")","Compte : "+(espaceMode==="compte"&&espaceUser?espaceUser.email:"compte connecté"),"","Modifications demandées :"].concat(ch.map(function(x){return "- "+x;})).concat(tail);
-      var blob=new Blob([lines.join("\n")],{type:"text/plain;charset=utf-8"});var url=URL.createObjectURL(blob);
-      function showSent(fallback){
+      /* Récapitulatif téléchargeable : il est régénéré selon l'issue réelle
+         (publiée / transmise à l'équipe / échec), jamais avec un statut
+         qui ne correspond pas à ce qui a vraiment été enregistré. */
+      function recapURL(tailLines){
+        var ls=["MISE À JOUR DE LA FICHE — ESPACE CENTRE","======================================","Centre : "+c.name+" ("+c.slug+")","Compte : "+(espaceMode==="compte"&&espaceUser?espaceUser.email:"compte connecté"),"","Modifications demandées :"].concat(ch.map(function(x){return "- "+x;})).concat(tailLines);
+        return URL.createObjectURL(new Blob([ls.join("\n")],{type:"text/plain;charset=utf-8"}));
+      }
+      var liveTail=["","Statut : publiée directement — votre fiche publique est à jour dès maintenant."];
+      var pendingTail=["","Statut : en attente de relecture et de validation par l'équipe de l'annuaire.","Aucune modification n'est publiée avant acceptation."];
+      var url=recapURL(isPublished?liveTail:pendingTail);
+      /* Demande transmise à l'équipe : affichée UNIQUEMENT si la demande a
+         vraiment été enregistrée (mises_a_jour). Jamais en cas d'échec —
+         un échec affiche showError, pas un faux succès. */
+      function showSent(viaFallback){
         setPending(true);
+        var u=viaFallback?recapURL(["","Statut : publication directe impossible — demande transmise à l'équipe pour application.","Aucune modification n'est publiée avant acceptation par l'équipe."]):url;
         document.getElementById("dashResult").innerHTML='<div class="success"><h3 style="margin-bottom:8px">✅ Modifications envoyées pour validation</h3><p>'+ch.length+" modification"+(ch.length>1?"s transmises":" transmise")+' à notre équipe. Votre fiche publique reste inchangée tant que la relecture n\'est pas terminée. Conservez le récapitulatif ci-dessous : il liste exactement ce que vous avez demandé.</p>'
-        +(fallback?'<p style="margin-top:8px">L\'enregistrement en ligne a échoué : le récapitulatif téléchargé fait foi — conservez-le, l\'équipe le traitera comme votre demande.</p>':"")
-        +'<p style="margin-top:12px"><a class="btn small" href="'+url+'" download="mise-a-jour-'+c.slug+'.txt">⬇ Télécharger le récapitulatif</a></p></div>';
+        +(viaFallback?'<p style="margin-top:8px">La publication directe n\'a pas abouti : votre demande a été transmise à l\'équipe, qui l\'appliquera à votre fiche.</p>':"")
+        +'<p style="margin-top:12px"><a class="btn small" href="'+u+'" download="mise-a-jour-'+c.slug+'.txt">⬇ Télécharger le récapitulatif</a></p></div>';
         toast("Modifications envoyées — en attente de validation");
       }
-      function showLive(){
+      function showLive(dropped){
         setPending(false);
         document.getElementById("dashResult").innerHTML='<div class="success"><h3 style="margin-bottom:8px">✅ Modifications publiées</h3><p>'+ch.length+" modification"+(ch.length>1?"s publiées":" publiée")+' — votre fiche publique est à jour dès maintenant, sans validation. Conservez le récapitulatif ci-dessous : il liste exactement ce qui a changé.</p>'
+        +(dropped&&dropped.length?'<p style="margin-top:8px">Note : certaines données de photo trop volumineuses n\'ont pas été enregistrées ('+esc(dropped.join(", "))+') — seuls leurs noms sont conservés ; vos textes sont bien publiés.</p>':"")
         +'<p style="margin-top:12px"><a class="btn small" href="'+url+'" download="mise-a-jour-'+c.slug+'.txt">⬇ Télécharger le récapitulatif</a></p></div>';
         toast("Modifications publiées — fiche à jour");
         /* La fiche publiée en mémoire suit la modification, pour que le
@@ -1479,39 +1498,59 @@ function viewEspaceDash(){
         espaceDraft.servicePhotos=JSON.parse(JSON.stringify(svcPhotos));
         espaceCentre=cloneCentre(espaceDraft);
       }
+      /* Échec visible : rien n'a été enregistré. Le bouton est réactivé
+         pour réessayer, et le récapitulatif reste téléchargeable — le
+         récapitulatif indique alors l'échec, jamais un succès. */
+      function showError(msg){
+        setPending(false);
+        var u=recapURL(["","Statut : ÉCHEC — rien n'a été enregistré.","Conservez ce récapitulatif et contactez l'équipe de l'annuaire."]);
+        document.getElementById("dashResult").innerHTML='<div class="notice"><b>Échec de l\'enregistrement — rien n\'a été publié.</b> '+esc(msg)+' Vos modifications ne sont pas perdues : réessayez, ou conservez le récapitulatif ci-dessous et contactez l\'équipe de l\'annuaire.<p style="margin-top:12px"><a class="btn small" href="'+u+'" download="mise-a-jour-'+c.slug+'.txt">⬇ Télécharger le récapitulatif</a></p></div>';
+        toast("Échec de l'enregistrement — rien n'a été publié");
+      }
       if(espaceMode==="compte"&&fbReady&&firebase.auth().currentUser){
         /* Attendre que Firebase soit prêt, puis enregistrer avec un délai
-           maximal : un échec (règles, réseau, lenteur) s'affiche au lieu
-           de rester silencieux. Centre déjà publié → écriture directe
-           de la fiche (en direct, sans validation) ; sinon → demande
-           de mise à jour pour validation par l'équipe. */
+           maximal. Centre déjà publié → écriture directe de la fiche
+           (en direct, sans validation) ; si elle échoue, la demande est
+           transmise à l'équipe (mises_a_jour) pour ne jamais perdre la
+           modification. Sinon → demande de mise à jour pour validation.
+           Aucun échec n'est silencieux : chaque issue s'affiche. */
+        var sendBtn=document.getElementById("d-send");
+        if(sendBtn){sendBtn.disabled=true;sendBtn.textContent="Enregistrement…";}
         fbWhenReady(function(){
           try{
             if(typeof firebase.firestore!=="function")throw new Error("Firestore n'est pas disponible (bibliothèque non chargée).");
             var user=firebase.auth().currentUser;
             if(!user)throw new Error("Session expirée — reconnectez-vous.");
             var timeoutP=new Promise(function(_,reject){setTimeout(function(){reject(new Error("timeout"));},12000);});
+            /* La fiche envoyée ne contient que des noms de fichiers, jamais
+               de données d'image : une photo trop volumineuse ne peut pas
+               faire échouer l'enregistrement des textes. */
+            var cleanUpd=sanitizeDirect(upd);
+            var safeUpd=cleanUpd.data;
+            function fallbackToTeam(reason){
+              var timeoutP2=new Promise(function(_,reject){setTimeout(function(){reject(new Error("timeout"));},12000);});
+              var writeP2=firebase.firestore().collection("centres").doc(user.uid).collection("mises_a_jour").add({createdAt:firebase.firestore.FieldValue.serverTimestamp(),statut:"en_attente",centreSlug:c.slug,centreNom:c.name,modifications:ch,ficheProposee:safeUpd});
+              Promise.race([writeP2,timeoutP2]).then(function(){showSent(true);}).catch(function(){
+                showError("La publication directe a échoué ("+reason+") et la transmission à l'équipe a échoué aussi. Vérifiez votre connexion puis réessayez.");
+              });
+            }
             if(isPublished){
-              var direct={slug:c.slug,name:upd.name,city:upd.city,address:upd.address,phone:upd.phone,phoneIntl:phoneToIntl(upd.phone),maps:upd.maps,desc:upd.desc,services:upd.services,hours:upd.hours,social:upd.social,coverFile:upd.coverFile,logoFile:upd.logoFile,servicePhotos:upd.servicePhotos,shopPhotos:upd.shopPhotos,directUpdated:true,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+              var direct={slug:c.slug,name:safeUpd.name,city:safeUpd.city,address:safeUpd.address,phone:safeUpd.phone,phoneIntl:phoneToIntl(safeUpd.phone),maps:safeUpd.maps,desc:safeUpd.desc,services:safeUpd.services,hours:safeUpd.hours,social:safeUpd.social,coverFile:safeUpd.coverFile,logoFile:safeUpd.logoFile,servicePhotos:safeUpd.servicePhotos,shopPhotos:safeUpd.shopPhotos,directUpdated:true,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
               var writeP=firebase.firestore().collection("centres").doc(user.uid).set(direct,{merge:true});
-              Promise.race([writeP,timeoutP]).then(function(){showLive();}).catch(function(err){
-                if(err&&err.message==="timeout"){showSent(true);toast("Envoi lent — le récapitulatif téléchargé fait foi");}
-                else{showSent(true);toast("Enregistrement en ligne impossible — récapitulatif téléchargé");}
+              Promise.race([writeP,timeoutP]).then(function(){showLive(cleanUpd.dropped);}).catch(function(err){
+                fallbackToTeam(err&&err.message==="timeout"?"délai dépassé":"écriture refusée");
               });
             }else{
-              var writeP2=firebase.firestore().collection("centres").doc(user.uid).collection("mises_a_jour").add({createdAt:firebase.firestore.FieldValue.serverTimestamp(),statut:"en_attente",centreSlug:c.slug,centreNom:c.name,modifications:ch,ficheProposee:upd});
-              Promise.race([writeP2,timeoutP]).then(function(){showSent(false);}).catch(function(err){
-                if(err&&err.message==="timeout"){showSent(true);toast("Envoi lent — le récapitulatif téléchargé fait foi");}
-                else{showSent(true);toast("Enregistrement en ligne impossible — récapitulatif téléchargé");}
+              var writeP2b=firebase.firestore().collection("centres").doc(user.uid).collection("mises_a_jour").add({createdAt:firebase.firestore.FieldValue.serverTimestamp(),statut:"en_attente",centreSlug:c.slug,centreNom:c.name,modifications:ch,ficheProposee:safeUpd});
+              Promise.race([writeP2b,timeoutP]).then(function(){showSent(false);}).catch(function(){
+                showError("La transmission à l'équipe a échoué. Vérifiez votre connexion puis réessayez.");
               });
             }
           }catch(err){
-            showSent(true);
-            toast("Erreur d'envoi — récapitulatif téléchargé");
+            showError(err&&err.message?err.message:"Erreur inattendue lors de l'envoi.");
           }
         },function(){
-          showSent(true);
-          toast("Firebase indisponible — récapitulatif téléchargé");
+          showError("Firebase est indisponible pour le moment. Vérifiez votre connexion puis réessayez.");
         });
       }else{
         document.getElementById("dashResult").innerHTML='<div class="notice"><b>Envoi impossible : session non connectée.</b> Reconnectez-vous à votre Espace centre, puis renvoyez vos modifications. Rien n\'a été transmis.</div>';
@@ -1521,6 +1560,7 @@ function viewEspaceDash(){
       /* Aucun échec silencieux : toute erreur s'affiche dans la page. */
       var msg=(err&&err.message)?err.message:"Erreur inattendue lors de l'envoi.";
       if(resultEl)resultEl.innerHTML='<div class="notice"><b>Envoi impossible.</b> '+esc(msg)+' Rien n\'a été transmis — corrigez et renvoyez.</div>';
+      var b0=document.getElementById("d-send");if(b0&&b0.textContent==="Enregistrement…"){b0.disabled=false;b0.textContent="Enregistrer";}
       toast(msg);
     }
   });
