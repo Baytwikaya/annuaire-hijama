@@ -85,6 +85,9 @@ section.block{padding:42px 0 10px}
 /* Cards */
 .grid{display:grid;gap:16px}
 @media(min-width:700px){.grid.c2{grid-template-columns:1fr 1fr}.grid.c3{grid-template-columns:repeat(3,1fr)}}
+/* Grille des centres : cartes compactes et uniformes — 2 par ligne sur tablette, 3 sur grand écran */
+@media(min-width:760px){.grid.centres{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1100px){.grid.centres{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:1200px){.grid{gap:22px}}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
 .card h3{font-size:1.22rem;margin-bottom:6px}
@@ -92,23 +95,30 @@ section.block{padding:42px 0 10px}
 .badge{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.05em;padding:3px 9px;border-radius:99px;background:var(--green-soft);color:var(--green);text-transform:uppercase}
 .badge.gold{background:var(--gold-soft);color:var(--gold)}
 .badge.grey{background:var(--surface2);color:var(--ink2)}
-.centre-card{display:flex;flex-direction:column;padding:0;overflow:hidden}
-.centre-card .card-body{display:flex;flex-direction:column;gap:8px;padding:12px 20px 20px;flex:1}
+.centre-card{display:flex;flex-direction:column;padding:0;overflow:hidden;height:100%}
+.centre-card .card-body{display:flex;flex-direction:column;gap:6px;padding:8px 16px 16px;flex:1}
+.centre-card h3{font-size:1.08rem;line-height:1.3}
+.centre-card .avis-line{font-size:.84rem}
+.centre-card .avis-line .stars{font-size:.95rem}
 /* Photo de profil / logo du centre : petit cercle sous la couverture */
-.centre-id{display:flex;align-items:flex-end;padding:0 20px}
-.centre-avatar{width:68px;height:68px;border-radius:50%;overflow:hidden;flex:none;margin-top:-34px;position:relative;z-index:2;border:3px solid var(--surface);box-shadow:0 2px 8px rgba(0,0,0,.28);background:var(--surface2)}
+.centre-id{display:flex;align-items:flex-end;padding:0 16px}
+.centre-avatar{width:54px;height:54px;border-radius:50%;overflow:hidden;flex:none;margin-top:-27px;position:relative;z-index:2;border:3px solid var(--surface);box-shadow:0 2px 8px rgba(0,0,0,.28);background:var(--surface2)}
 .centre-avatar img{width:100%;height:100%;object-fit:cover;display:block}
-.centre-avatar.big{width:82px;height:82px;margin-top:-41px}
-.centre-card .meta{font-size:.9rem;color:var(--ink2)}
+.centre-avatar.big{width:72px;height:72px;margin-top:-36px}
+.centre-card .meta{font-size:.86rem;color:var(--ink2)}
+.centre-card .tag{font-size:.78rem;padding:4px 9px}
+.centre-card .own-line{font-size:.83rem;color:var(--ink2);border-top:1px solid var(--line);padding-top:8px}
+.centre-card .own-line b{color:var(--green-d)}
+@media (prefers-color-scheme: dark){.centre-card .own-line b{color:var(--green)}}
 .centre-card .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
 /* Photo de couverture des centres */
-.cover{position:relative;margin:0;aspect-ratio:16/8.4;background:var(--green-d);overflow:hidden;flex:none}
+.cover{position:relative;margin:0;aspect-ratio:16/10;background:var(--green-d);overflow:hidden;flex:none}
 .cover img{width:100%;height:100%;object-fit:cover;object-position:center 42%;display:block}
 .cover::after{content:"";position:absolute;inset:auto 0 0 0;height:46%;background:linear-gradient(180deg,rgba(6,26,14,0),rgba(6,26,14,.55));pointer-events:none}
 .cover .cover-badges{position:absolute;left:12px;top:12px;z-index:1;display:flex;gap:6px;flex-wrap:wrap}
 .cover .cover-badges .badge{box-shadow:0 1px 6px rgba(0,0,0,.4)}
 .cover-none{display:grid;place-items:center;background:linear-gradient(140deg,#0e4d26,#083018)}
-.cover-none img{width:86px;height:auto;object-fit:contain;opacity:.92}
+.cover-none img{width:64px;height:auto;object-fit:contain;opacity:.92}
 .cover-none::after{display:none}
 .fiche-cover{position:relative;margin:10px 0 0;border-radius:var(--radius);overflow:hidden;aspect-ratio:16/6.2;background:var(--green-d);border-bottom:3px solid var(--gold)}
 .fiche-cover img{width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block}
@@ -160,10 +170,10 @@ form.avis textarea{min-height:90px;resize:vertical}
 @media (prefers-color-scheme: dark){.tracker{--tb:#173d24}}
 @media(min-width:900px){.tracker{grid-template-columns:1fr 1fr}}
 .tracker-media{position:relative;margin:0;aspect-ratio:4/3;overflow:hidden;order:-1}
-@media(min-width:900px){.tracker-media{order:0;aspect-ratio:auto;min-height:420px}}
-.tracker-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:60% center;display:block}
+@media(min-width:900px){.tracker-media{order:0;aspect-ratio:4/3;align-self:center;min-height:0;margin:22px 22px 22px 0;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.3)}}
+.tracker-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block}
 .tracker-media::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(14,77,38,0) 68%,rgba(6,26,14,.35) 100%)}
-@media(min-width:900px){.tracker-media::after{background:linear-gradient(90deg,rgba(14,77,38,.45) 0%,rgba(14,77,38,0) 15%),linear-gradient(180deg,rgba(14,77,38,0) 62%,rgba(6,26,14,.38) 100%)}}
+@media(min-width:900px){.tracker-media::after{background:linear-gradient(180deg,rgba(14,77,38,0) 68%,rgba(6,26,14,.3) 100%)}}
 .tracker-media figcaption{position:absolute;left:14px;top:14px;z-index:1;background:rgba(6,26,14,.84);color:#fff;padding:7px 13px;border-radius:99px;font-size:.82rem;font-weight:700;line-height:1.35;max-width:calc(100% - 28px)}
 @media(min-width:900px){.tracker-media figcaption{left:18px;top:18px}}
 .tracker-body{padding:26px 24px 28px;display:flex;flex-direction:column;gap:13px;justify-content:center}
@@ -394,13 +404,12 @@ function centreCard(c){
   +avatarHTML(c)
   +'<div class="card-body">'
   +'<h3><a href="#/centre/'+c.slug+'">'+esc(c.name)+'</a></h3>'
-  +'<div class="avis-line"><span class="stars" aria-hidden="true">☆☆☆☆☆</span><span>Avis de l\'annuaire : déposés par les visiteurs et publiés après relecture — voir la fiche du centre</span></div>'
-  +'<p class="meta meta-views">👁 Vues de la fiche : compteur activé au lancement du site</p>'
+  +'<div class="avis-line"><span class="stars" aria-hidden="true">☆☆☆☆☆</span><span>Avis publiés après relecture — <a href="#/centre/'+c.slug+'">voir la fiche</a></span></div>'
   +'<p class="meta">📍 '+esc(c.address)+'</p>'
   +'<p class="meta">🕗 Ouvert 7 j/7 — ven. jusqu\'à 11h30</p>'
-  +'<div class="taglist">'+c.services.slice(0,4).map(function(s){return '<span class="tag">'+esc(s)+"</span>";}).join("")+'</div>'
+  +'<div class="taglist">'+c.services.slice(0,3).map(function(s){return '<span class="tag">'+esc(s)+"</span>";}).join("")+(c.services.length>3?'<span class="tag">+'+(c.services.length-3)+' autres services</span>':"")+'</div>'
   +'<div class="actions"><a class="btn small" href="#/centre/'+c.slug+'">Voir la fiche</a><a class="btn small ghost" href="tel:'+c.phoneIntl+'">📞 '+c.phone+"</a></div>"
-  +'<div class="own-space" style="margin-top:12px"><span aria-hidden="true" style="font-size:1.15rem;line-height:1">🔑</span><p style="margin:0"><b>C\'est votre centre ?</b> Ce centre a son propre <a href="#/espace" style="font-weight:700">Espace centre</a> : son responsable y gère cette fiche et peut y ajouter ses autres services.</p></div></div></article>';
+  +'<p class="own-line">🔑 <b>C\'est votre centre ?</b> Gérez cette fiche depuis votre <a href="#/espace" style="font-weight:700">Espace centre</a>.</p></div></article>';
 }
 function trackerBlock(){
   return '<section class="block" id="tracker"><div class="tracker"><div class="tracker-body"><div><span class="badge gold">Pour les professionnels</span>'
@@ -428,7 +437,7 @@ function viewHome(){
   +'<div class="wrap">'+adSlot(false)
   +'<section class="block"><div class="sec-head"><h2>Centres vérifiés</h2><a href="#/centres">Tous les centres →</a></div>'
   +'<p class="sec-sub">L\'annuaire démarre avec son premier centre vérifié. Les suivants rejoindront la liste au rythme des contrôles — jamais avant.</p>'
-  +'<div class="grid c2">'+CENTRES.filter(function(c){return !c.suspended;}).map(centreCard).join("")+'<article class="card" style="display:flex;flex-direction:column;gap:8px;justify-content:center;text-align:center"><h3>Votre centre n\'est pas encore là ?</h3><p>Les inscriptions sont ouvertes dans les 375 villes. Chaque demande passe par notre vérification d\'hygiène avant publication.</p><div class="actions" style="justify-content:center"><a class="btn small" href="#/inscription">Inscrire mon centre</a></div></article></div></section>'
+  +'<div class="grid centres">'+CENTRES.filter(function(c){return !c.suspended;}).map(centreCard).join("")+'<article class="card" style="display:flex;flex-direction:column;gap:8px;justify-content:center;text-align:center"><h3>Votre centre n\'est pas encore là ?</h3><p>Les inscriptions sont ouvertes dans les 375 villes. Chaque demande passe par notre vérification d\'hygiène avant publication.</p><div class="actions" style="justify-content:center"><a class="btn small" href="#/inscription">Inscrire mon centre</a></div></article></div></section>'
   +'<section class="block"><div class="sec-head"><h2>Les grandes villes</h2><a href="#/villes">Les 375 villes →</a></div>'
   +'<div class="chips">'+topCities.map(function(n){var c=CITIES.filter(function(x){return x.name===n;})[0];var k=centresOf(c.slug).length;return '<a class="chip" href="#/ville/'+c.slug+'">'+esc(n)+(k?'<span class="n">'+k+" centre"+(k>1?"s":"")+"</span>":'<span class="n">bientôt</span>')+"</a>";}).join("")+"</div></section>"
   +'<section class="block"><div class="sec-head"><h2>Comment un centre entre dans l\'annuaire</h2><a href="#/verification">Le détail →</a></div>'
@@ -448,7 +457,7 @@ function viewCentres(q){
   app.innerHTML='<div class="wrap"><p class="crumb"><a href="#/accueil">Accueil</a> › Centres</p><h1 style="font-size:1.8rem">Centres de hijama vérifiés</h1>'
   +'<p class="sec-sub" style="margin-top:8px">Uniquement des centres contrôlés par notre équipe : contact direct, photos des locaux et vérification des critères d\'hygiène avant publication.</p>'
   +'<form class="toolbar" id="cSearch"><input type="search" id="cq" placeholder="Rechercher un centre, un service, une ville…" value="'+(q?esc(q):"")+'"><button class="btn small" type="submit">Rechercher</button></form>'
-  +(list.length?'<div class="grid c2">'+list.map(centreCard).join("")+"</div>":'<div class="empty"><h3 style="margin-bottom:6px">Aucun centre ne correspond</h3><p>Essayez un autre service ou parcourez les villes — de nouveaux centres sont ajoutés après chaque vérification.</p><p style="margin-top:12px"><a class="btn small" href="#/villes">Voir les villes</a></p></div>')
+  +(list.length?'<div class="grid centres">'+list.map(centreCard).join("")+"</div>":'<div class="empty"><h3 style="margin-bottom:6px">Aucun centre ne correspond</h3><p>Essayez un autre service ou parcourez les villes — de nouveaux centres sont ajoutés après chaque vérification.</p><p style="margin-top:12px"><a class="btn small" href="#/villes">Voir les villes</a></p></div>')
   +adSlot(false)+trackerBlock()+"</div>";
   document.getElementById("cSearch").addEventListener("submit",function(e){e.preventDefault();var v=document.getElementById("cq").value.trim();location.hash="#/centres"+(v?"?q="+encodeURIComponent(v):"");});
   window.scrollTo(0,0);
@@ -470,7 +479,7 @@ function viewVille(slug,q){
   var list=centresOf(slug).filter(function(c){if(!q)return true;return (c.name+" "+c.services.join(" ")).toLowerCase().indexOf(q.toLowerCase())>-1;});
   app.innerHTML='<div class="wrap"><p class="crumb"><a href="#/accueil">Accueil</a> › <a href="#/villes">Villes</a> › '+esc(city.name)+'</p>'
   +'<h1 style="font-size:1.8rem">Hijama à '+esc(city.name)+'</h1><p class="sec-sub" style="margin-top:8px">Région '+esc(city.region)+". Centres de hijama vérifiés à "+esc(city.name)+" : admission contrôlée, hygiène vérifiée, fiche rédigée par notre équipe.</p>"
-  +(list.length?'<div class="grid c2">'+list.map(centreCard).join("")+"</div>"
+  +(list.length?'<div class="grid centres">'+list.map(centreCard).join("")+"</div>"
     :'<div class="empty"><h3 style="margin-bottom:6px">Aucun centre vérifié pour le moment à '+esc(city.name)+'</h3><p>Nous n\'avons pas encore validé de centre dans cette ville — et nous préférons une page vide à une fiche non vérifiée. Vous y gérez un centre ? Passez la vérification et soyez le premier publié ici.</p><p style="margin-top:14px"><a class="btn small" href="#/inscription?ville='+slug+'">Inscrire un centre à '+esc(city.name)+'</a></p></div>')
   +adSlot(false)
   +'<section class="block"><div class="sec-head"><h2>Autres villes de la région</h2><a href="#/villes">Toutes les villes →</a></div><div class="chips">'
