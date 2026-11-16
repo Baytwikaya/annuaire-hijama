@@ -133,20 +133,21 @@ section.block{padding:42px 0 10px}
 .fiche-cover img{width:100%;height:100%;object-fit:cover;object-position:center 40%;display:block}
 .fiche-cover.cover-none{display:grid;place-items:center}
 .fiche-cover.cover-none img{width:110px;height:auto;object-fit:contain}
-.gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,220px));justify-content:center;gap:10px;margin-top:10px}
-.gallery a{display:block;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.gallery{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:10px}
+.gallery a{display:block;flex:1 1 150px;max-width:210px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
 .gallery img{width:100%;height:96px;object-fit:cover;display:block}
-/* Grille des photos par service (fiche publique) : grille centrée et
-   équilibrée — les cartes remplissent la ligne et se replient
+/* Grille des photos par service (fiche publique) : flexbox centré —
+   les cartes remplissent la ligne et une dernière ligne incomplète
+   reste centrée au lieu d'être collée à gauche ; se replie
    proprement sur mobile, sans défilement ni boutons. */
-.svc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:10px}
-.svc-slide{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+.svc-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:10px}
+.svc-slide{flex:1 1 230px;max-width:320px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
 .svc-slide img{width:100%;height:132px;object-fit:cover;display:block}
 .svc-slide .svc-ph{height:132px;display:grid;place-items:center;background:linear-gradient(140deg,var(--green-soft),var(--surface2));color:var(--green);font-size:2rem}
 .svc-slide .svc-cap{padding:10px 12px;font-weight:700;font-size:.92rem;line-height:1.35}
 .svc-slide .svc-cap small{display:block;font-weight:600;color:var(--ink2);font-size:.8rem;margin-top:3px}
-@media(max-width:560px){.svc-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}}
-@media(max-width:380px){.svc-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.svc-slide{flex-basis:160px;max-width:230px}}
+@media(max-width:380px){.svc-slide{flex:1 1 100%;max-width:none}}
 /* Réseaux sociaux d'un centre (fiche publique) */
 .social-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .social-links a{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:99px;padding:8px 14px;font-weight:700;font-size:.9rem;color:var(--ink);text-decoration:none;background:var(--surface)}
@@ -1210,7 +1211,7 @@ function viewEspace(){
   var configured=!!FIREBASE_CONFIG.apiKey;
   app.innerHTML='<div class="wrap"><p class="crumb"><a href="#/accueil">Accueil</a> › Espace centre</p>'
   +'<h1 style="font-size:1.8rem">Espace centre</h1>'
-  +'<p class="sec-sub" style="margin-top:8px">Chaque centre publié dans l\'annuaire dispose de <b>son propre espace, le sien uniquement</b> : un compte par centre, lié à son e-mail d\'inscription, où il ne voit et ne modifie que <b>sa propre fiche</b> — jamais celle d\'un autre centre. Il y corrige ses informations, met à jour ses visuels et, <b>s\'il propose un autre service, il l\'ajoute lui-même</b> depuis son espace. Rien n\'est publié directement : chaque modification part en relecture et notre équipe la valide avant qu\'elle n\'apparaisse sur le site.</p>'
+  +'<p class="sec-sub" style="margin-top:8px">Chaque centre publié dans l\'annuaire dispose de <b>son propre espace, le sien uniquement</b> : un compte par centre, lié à son e-mail d\'inscription, où il ne voit et ne modifie que <b>sa propre fiche</b> — jamais celle d\'un autre centre. Il y corrige ses informations, met à jour ses visuels et, <b>s\'il propose un autre service, il l\'ajoute lui-même</b> depuis son espace. <b>Chaque modification est publiée immédiatement</b> sur sa fiche publique, sans validation par notre équipe, sans attente : il enregistre, et c\'est en ligne.</p>'
   +'<div class="espace-grid"><div class="card"><span class="badge gold">Réservé aux centres publiés</span>'
   +'<h3 style="margin-top:10px">Se connecter</h3>'
   +'<p style="font-size:.92rem">Utilisez l\'e-mail déclaré lors de votre inscription et le mot de passe transmis par notre équipe lorsque votre centre a été accepté.</p>'
