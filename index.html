@@ -753,7 +753,7 @@ function viewCentre(slug,liveCentre){
   +'<label class="check"><input type="checkbox" id="a-visit"><span><b>Avis réel :</b> je confirme avoir réellement effectué une séance dans ce centre. Les avis de complaisance ou déposés par le centre lui-même sont refusés. *</span></label>'
   +'<div class="notice">Votre avis est <b>envoyé directement à notre équipe</b> dès l\'envoi du formulaire. Il sera relu puis publié par notre équipe — jamais automatiquement.</div>'
   +'<div style="text-align:center"><button class="btn" type="submit" id="avisSubmit">Envoyer mon avis pour relecture</button></div></form></div></div></div>'
-  +'<aside><div class="card"><h3>Horaires d\'ouverture</h3><table class="hours" style="margin-top:8px">'+c.hours.map(function(h){return "<tr><td>"+h[0]+"</td><td>"+h[1]+"</td></tr>";}).join("")+"</table></div>"
+  +'<aside><div class="card"><h3>Horaires d\'ouverture</h3><table class="hours" style="margin-top:8px">'+c.hours.map(function(h){return "<tr><td>"+esc(hourDay(h))+"</td><td>"+esc(hourRange(h))+"</td></tr>";}).join("")+"</table></div>"
   +'<div class="card" style="margin-top:16px"><h3>👁 Cette fiche en chiffres</h3><div class="viewstats">'
   +'<div class="row"><span class="lbl">Vues de la fiche</span><span class="val">—<small>comptage dès le lancement</small></span></div>'
   +'<div class="row"><span class="lbl">Clics sur « Appeler »</span><span class="val">—<small>comptage dès le lancement</small></span></div>'
@@ -1039,7 +1039,17 @@ function sanitizeDirect(obj){
       if(v.indexOf("data:")===0||v.length>100000){dropped.push(path);return "";}
       return v;
     }
-    if(Array.isArray(v))return v.map(function(x,i){return clean(x,path+"["+i+"]");});
+    if(Array.isArray(v))return v.map(function(x,i){
+      if(Array.isArray(x)){
+        /* Firestore interdit les tableaux imbriqués : un tableau ne doit
+           jamais en contenir un autre, sinon l'écriture entière est
+           refusée. Une paire [jour, plage] devient {day, hours} ; tout
+           autre tableau interne devient un objet à clés numériques. */
+        if(x.length===2&&typeof x[0]==="string"&&typeof x[1]==="string")return {day:clean(x[0],path+"["+i+"].day"),hours:clean(x[1],path+"["+i+"].hours")};
+        var o={};x.forEach(function(y,j){o["v"+j]=clean(y,path+"["+i+"].v"+j);});return o;
+      }
+      return clean(x,path+"["+i+"]");
+    });
     if(v&&typeof v==="object"&&Object.getPrototypeOf(v)===Object.prototype){
       var o={};Object.keys(v).forEach(function(k){o[k]=clean(v[k],path+"."+k);});return o;
     }
@@ -1047,6 +1057,108 @@ function sanitizeDirect(obj){
   }
   var out={};Object.keys(obj).forEach(function(k){out[k]=clean(obj[k],k);});
   return {data:out,dropped:dropped};
+}
+/* Fichiers joints : lecture des objets File (pas seulement leurs noms),
+   pour la conversion WebP et l'envoi vers Storage. */
+function fileOf(id){var inp=document.getElementById(id);return (inp&&inp.files&&inp.files.length)?inp.files[0]:null;}
+function filesOf(id){var inp=document.getElementById(id);var out=[];if(inp&&inp.files)for(var i=0;i<inp.files.length;i++)out.push(inp.files[i]);return out;}
+/* Conversion WebP côté navigateur : les photos des centres sont
+   ré-encodées en WebP avant envoi — fichier plus léger, même qualité
+   visuelle. Qualité 0,90 (haute, nette) ; on ne réduit les dimensions
+   que si le plus grand côté dépasse 1600 px (une photo déjà ≤1600 px
+   garde ses dimensions d'origine). Un petit WebP est gardé tel quel.
+   En cas d'échec, on garde le fichier d'origine. */
+var WEBP_QUALITY=0.90,WEBP_MAX_SIDE=1600,WEBP_KEEP_SIZE=500*1024;
+function toWebPFile(file){
+  if(!file||!file.type||file.type.indexOf("image/")!==0)return Promise.resolve(file);
+  if(file.type==="image/webp"&&file.size<=WEBP_KEEP_SIZE)return Promise.resolve(file);
+  return new Promise(function(resolve){
+    var url=null,done=false;
+    function finish(out){if(done)return;done=true;if(url){try{URL.revokeObjectURL(url);}catch(e){}}resolve(out||file);}
+    try{
+      url=URL.createObjectURL(file);
+      var img=new Image();
+      img.onload=function(){
+        try{
+          var w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
+          if(!w||!h){finish(null);return;}
+          var scale=Math.min(1,WEBP_MAX_SIDE/Math.max(w,h));
+          var cw=Math.max(1,Math.round(w*scale)),ch=Math.max(1,Math.round(h*scale));
+          var cv=document.createElement("canvas");cv.width=cw;cv.height=ch;
+          var ctx=cv.getContext("2d");
+          if(!ctx){finish(null);return;}
+          ctx.drawImage(img,0,0,cw,ch);
+          if(typeof cv.toBlob!=="function"){finish(null);return;}
+          cv.toBlob(function(blob){
+            if(!blob){finish(null);return;}
+            var name=(file.name||"photo").replace(/\.[^.]+$/,"")+".webp";
+            var out;
+            try{out=new File([blob],name,{type:"image/webp"});}catch(e){out=blob;try{out.name=name;}catch(e2){}}
+            finish(out);
+          },"image/webp",WEBP_QUALITY);
+        }catch(e){finish(null);}
+      };
+      img.onerror=function(){finish(null);};
+      img.src=url;
+    }catch(e){finish(null);}
+  });
+}
+/* Envoi d'une photo vers Firebase Storage (dossier du centre) ; renvoie
+   son URL de téléchargement, ou null si Storage n'est pas disponible ou
+   si l'envoi échoue. Ne rejette jamais. */
+function uploadCentrePhoto(uid,file,path){
+  return new Promise(function(resolve){
+    try{
+      if(!uid||!file)return resolve(null);
+      if(typeof firebase==="undefined"||typeof firebase.storage!=="function")return resolve(null);
+      var ref=firebase.storage().ref("centres/"+uid+"/"+path);
+      var task=ref.put(file,{contentType:file.type||"image/webp"});
+      var to=setTimeout(function(){try{task.cancel();}catch(e){} resolve(null);},30000);
+      Promise.resolve(task).then(function(){
+        clearTimeout(to);
+        ref.getDownloadURL().then(function(u){resolve(u);}).catch(function(){resolve(null);});
+      }).catch(function(){clearTimeout(to);resolve(null);});
+    }catch(e){resolve(null);}
+  });
+}
+/* Conversion WebP + envoi Storage de toutes les photos jointes.
+   Renvoie {urls:{cover,logo,shop:[],services:{}},failed:[],storageAvailable}.
+   Ne rejette jamais : une photo en échec ne bloque pas l'enregistrement
+   des textes (son nom de fichier est conservé). */
+function processPhotoUploads(uid,files){
+  return new Promise(function(resolve){
+    var urls={cover:null,logo:null,shop:[],services:{}};
+    var failed=[];
+    var storageAvailable=false;
+    try{storageAvailable=(typeof firebase!=="undefined"&&typeof firebase.storage==="function");}catch(e){storageAvailable=false;}
+    var jobs=[];
+    function addJob(kind,key,file,base){if(file)jobs.push({kind:kind,key:key,file:file,base:base});}
+    addJob("cover","cover",files.cover,"cover");
+    addJob("logo","logo",files.logo,"logo");
+    addJob("shop","façade",files.shopExterior,"shop/exterieur");
+    (files.shopInterior||[]).forEach(function(f,i){addJob("shop","intérieur "+(i+1),f,"shop/interieur-"+(i+1));});
+    (files.services||[]).forEach(function(s){addJob("service",s.name,s.file,"services/"+citySlug(s.name));});
+    if(!jobs.length){resolve({urls:urls,failed:failed,storageAvailable:storageAvailable});return;}
+    if(!storageAvailable){jobs.forEach(function(j){failed.push(j.key||j.kind);});resolve({urls:urls,failed:failed,storageAvailable:false});return;}
+    var finished=false,pending=jobs.length;
+    var timer=setTimeout(function(){if(!finished){finished=true;failed.push("photos");resolve({urls:urls,failed:failed,storageAvailable:storageAvailable});}},40000);
+    function oneDone(){pending--;if(pending<=0&&!finished){finished=true;clearTimeout(timer);resolve({urls:urls,failed:failed,storageAvailable:storageAvailable});}}
+    jobs.forEach(function(job){
+      toWebPFile(job.file).then(function(webp){
+        var ext="webp";
+        if(!webp||webp.type!=="image/webp"){var m=(job.file.name||"").match(/\.([a-z0-9]+)$/i);ext=m?m[1].toLowerCase():"jpg";if(ext==="jpeg")ext="jpg";}
+        uploadCentrePhoto(uid,webp,job.base+"."+ext).then(function(url){
+          if(url){
+            if(job.kind==="cover")urls.cover=url;
+            else if(job.kind==="logo")urls.logo=url;
+            else if(job.kind==="shop")urls.shop.push(url);
+            else if(job.kind==="service")urls.services[job.key]=url;
+          }else failed.push(job.key||job.kind);
+          oneDone();
+        });
+      }).catch(function(){failed.push(job.key||job.kind);oneDone();});
+    });
+  });
 }
 function bindPicked(ids){ids.forEach(function(id){
   var inp=document.getElementById(id),zone=document.getElementById(id+"-picked");
@@ -1064,6 +1176,13 @@ function bindPicked(ids){ids.forEach(function(id){
 function fmtHour(h24){var p=h24.split(":");return parseInt(p[0],10)+"h"+p[1];}
 function fmtRange(open,close){return fmtHour(open)+" – "+fmtHour(close);}
 function toMinutes(h24){var p=String(h24).split(":");return parseInt(p[0],10)*60+parseInt(p[1],10);}
+/* Horaires : deux formes coexistent — les paires [jour, plage] des données
+   codées en dur et les objets {day, hours} écrits dans Firestore (les
+   tableaux imbriqués y sont interdits : une paire [jour, plage] dans un
+   tableau fait échouer l'écriture). Ces deux lectures acceptent les deux
+   formes, sans jamais planter. */
+function hourDay(h){return h?(h.day!==undefined?h.day:h[0]):"";}
+function hourRange(h){return h?(h.hours!==undefined?h.hours:h[1]):"";}
 function timeSlotOptions(selected){
   var out="";
   for(var m=360;m<=1410;m+=30){
@@ -1082,14 +1201,14 @@ function parseHoursRange(str){
   return {open:o,close:c2};
 }
 function hourRowHTML(h,i){
-  var closed=/^\s*ferm[ée]\s*$/i.test(h[1]);
-  var rng=closed?null:parseHoursRange(h[1]);
+  var closed=/^\s*ferm[ée]\s*$/i.test(hourRange(h));
+  var rng=closed?null:parseHoursRange(hourRange(h));
   var open=rng?rng.open:"8:00",close=rng?rng.close:"16:30";
   return '<div class="hour-row'+(closed?" is-closed":"")+'" data-day="'+i+'">'
-    +'<span class="day">'+esc(h[0])+'</span>'
-    +'<select class="hour-open" aria-label="Ouverture — '+esc(h[0])+'"'+(closed?" disabled":"")+'>'+timeSlotOptions(open)+'</select>'
+    +'<span class="day">'+esc(hourDay(h))+'</span>'
+    +'<select class="hour-open" aria-label="Ouverture — '+esc(hourDay(h))+'"'+(closed?" disabled":"")+'>'+timeSlotOptions(open)+'</select>'
     +'<span class="sep" aria-hidden="true">à</span>'
-    +'<select class="hour-close" aria-label="Fermeture — '+esc(h[0])+'"'+(closed?" disabled":"")+'>'+timeSlotOptions(close)+'</select>'
+    +'<select class="hour-close" aria-label="Fermeture — '+esc(hourDay(h))+'"'+(closed?" disabled":"")+'>'+timeSlotOptions(close)+'</select>'
     +'<label class="closed-lbl"><input type="checkbox" class="hour-closed"'+(closed?" checked":"")+'> Fermé</label>'
     +'</div>';
 }
@@ -1351,7 +1470,7 @@ function viewEspaceDash(){
   +adSlot(true)
   +'</aside></div></div>';
   var form=document.getElementById("dashForm");
-  function collectServiceRows(){var out=[];document.querySelectorAll("#svcList .svc-slot").forEach(function(row){var nameEl=row.querySelector(".svc-input");var photoEl=row.querySelector(".svc-photo");var name=nameEl?nameEl.value.trim():"";if(!name)return;var photo="";if(photoEl&&photoEl.files&&photoEl.files.length)photo=photoEl.files[0].name;out.push({name:name,photo:photo});});return out;}
+  function collectServiceRows(){var out=[];document.querySelectorAll("#svcList .svc-slot").forEach(function(row){var nameEl=row.querySelector(".svc-input");var photoEl=row.querySelector(".svc-photo");var name=nameEl?nameEl.value.trim():"";if(!name)return;var photo="";if(photoEl&&photoEl.files&&photoEl.files.length)photo=photoEl.files[0].name;out.push({name:name,photo:photo,file:(photoEl&&photoEl.files&&photoEl.files.length)?photoEl.files[0]:null});});return out;}
   function collectServices(){return collectServiceRows().map(function(r){return r.name;});}
   function refreshPreview(){
     var nd=cloneCentre(espaceDraft);
@@ -1427,17 +1546,18 @@ function viewEspaceDash(){
       var citySel=document.getElementById("d-city");var cityName="";CITIES.forEach(function(x){if(x.slug===citySel.value)cityName=x.name;});
       /* Horaires : lus dans les sélecteurs (ouverture / fermeture) et la
          case « Fermé » de chaque jour. La fermeture doit suivre l'ouverture. */
-      var hours=[];
+      var hours=[];var hoursErr=null;
       document.querySelectorAll(".hour-row").forEach(function(row){
         var idx=parseInt(row.getAttribute("data-day"),10);
-        var day=(c.hours[idx]&&c.hours[idx][0])||"";
+        var day=hourDay(c.hours[idx]);
         var closedEl=row.querySelector(".hour-closed");
-        if(closedEl&&closedEl.checked){hours.push([day,"Fermé"]);return;}
+        if(closedEl&&closedEl.checked){hours.push({day:day,hours:"Fermé"});return;}
         var openEl=row.querySelector(".hour-open"),closeEl=row.querySelector(".hour-close");
         var open=openEl?openEl.value:"",close=closeEl?closeEl.value:"";
-        if(open&&close&&toMinutes(open)>=toMinutes(close)){throw new Error("Pour "+day+", l'heure de fermeture doit être après l'heure d'ouverture.");}
-        hours.push([day,fmtRange(open,close)]);
+        if(open&&close&&toMinutes(open)>=toMinutes(close)){hoursErr="Pour "+day+", l'heure de fermeture doit être après l'heure d'ouverture.";return;}
+        hours.push({day:day,hours:fmtRange(open,close)});
       });
+      if(hoursErr){fail(hoursErr);return;}
       /* Photos : une par service (lues dans les lignes de services) et les
          photos du centre (façade + intérieur). Seuls les noms de fichiers
          sont enregistrés pour l'instant — les fichiers eux-mêmes ne sont
@@ -1447,6 +1567,10 @@ function viewEspaceDash(){
       var shopExterior=fileNamesOf("d-shop-exterior");
       var shopInterior=fileNamesOf("d-shop-interior");
       var upd={name:name,city:cityName,address:document.getElementById("d-addr").value.trim(),phone:phone,maps:document.getElementById("d-maps").value.trim(),desc:document.getElementById("d-desc").value.trim(),services:services,hours:hours,social:soc,coverFile:fileNamesOf("d-cover"),logoFile:fileNamesOf("d-logo"),servicePhotos:svcPhotos,newServicePhotos:JSON.parse(JSON.stringify(svcPhotos)),shopPhotos:{exterior:shopExterior,interior:shopInterior}};
+      /* Photos à envoyer : les fichiers joints (pas seulement leurs noms).
+         Ils seront convertis en WebP puis envoyés vers Storage ; leurs
+         URLs remplaceront les noms dans la fiche publique. */
+      var photoFiles={cover:fileOf("d-cover"),logo:fileOf("d-logo"),shopExterior:fileOf("d-shop-exterior"),shopInterior:filesOf("d-shop-interior"),services:svcRows.filter(function(r){return r.file;}).map(function(r){return {name:r.name,file:r.file};})};
       var ch=[];
       function diffLbl(lbl,a,b){if(a!==b)ch.push(lbl+" : « "+(a||"—")+" » → « "+(b||"—")+" »");}
       diffLbl("Nom",c.name,upd.name);diffLbl("Ville",c.city,upd.city);diffLbl("Adresse",c.address,upd.address);diffLbl("Téléphone",c.phone,upd.phone);diffLbl("Lien Google Maps",c.maps||"",upd.maps);diffLbl("Présentation",c.desc,upd.desc);
@@ -1457,7 +1581,7 @@ function viewEspaceDash(){
       var oldSvcPhotos=c.servicePhotos||{};
       upd.services.forEach(function(s){if(c.services.indexOf(s)<0){ch.push("Service ajouté : "+s);if(svcPhotos[s])ch.push("Photo du service « "+s+" » : "+svcPhotos[s]);}else if(svcPhotos[s]&&oldSvcPhotos[s]!==svcPhotos[s]){ch.push("Photo du service « "+s+" » : "+svcPhotos[s]);}});
       c.services.forEach(function(s){if(upd.services.indexOf(s)<0)ch.push("Service retiré : "+s);});
-      upd.hours.forEach(function(h,i){if(c.hours[i]&&c.hours[i][1]!==h[1])ch.push("Horaires du "+h[0]+" : « "+c.hours[i][1]+" » → « "+h[1]+" »");});
+      upd.hours.forEach(function(h,i){if(c.hours[i]&&hourRange(c.hours[i])!==hourRange(h))ch.push("Horaires du "+hourDay(h)+" : « "+hourRange(c.hours[i])+" » → « "+hourRange(h)+" »");});
       if(upd.coverFile)ch.push("Nouvelle photo de couverture déposée : "+upd.coverFile);
       if(upd.logoFile)ch.push("Nouveau logo / photo de profil déposé : "+upd.logoFile);
       if(shopExterior)ch.push("Photo de la façade / extérieur déposée : "+shopExterior);
@@ -1488,10 +1612,11 @@ function viewEspaceDash(){
         +'<p style="margin-top:12px"><a class="btn small" href="'+u+'" download="mise-a-jour-'+c.slug+'.txt">⬇ Télécharger le récapitulatif</a></p></div>';
         toast("Modifications envoyées — en attente de validation");
       }
-      function showLive(dropped){
+      function showLive(dropped,photoFailed){
         setPending(false);
         document.getElementById("dashResult").innerHTML='<div class="success"><h3 style="margin-bottom:8px">✅ Modifications publiées</h3><p>'+ch.length+" modification"+(ch.length>1?"s publiées":" publiée")+' — votre fiche publique est à jour dès maintenant, sans validation. Conservez le récapitulatif ci-dessous : il liste exactement ce qui a changé.</p>'
         +(dropped&&dropped.length?'<p style="margin-top:8px">Note : certaines données de photo trop volumineuses n\'ont pas été enregistrées ('+esc(dropped.join(", "))+') — seuls leurs noms sont conservés ; vos textes sont bien publiés.</p>':"")
+        +(photoFailed&&photoFailed.length?'<p style="margin-top:8px">Note : certaines photos n\'ont pas pu être envoyées pour le moment (service d\'envoi indisponible) — vos textes sont bien publiés ; réessayez pour les photos, ou contactez l\'équipe.</p>':"")
         +'<p style="margin-top:12px"><a class="btn small" href="'+url+'" download="mise-a-jour-'+c.slug+'.txt">⬇ Télécharger le récapitulatif</a></p></div>';
         toast("Modifications publiées — fiche à jour");
         /* La fiche publiée en mémoire suit la modification, pour que le
@@ -1522,33 +1647,78 @@ function viewEspaceDash(){
             if(typeof firebase.firestore!=="function")throw new Error("Firestore n'est pas disponible (bibliothèque non chargée).");
             var user=firebase.auth().currentUser;
             if(!user)throw new Error("Session expirée — reconnectez-vous.");
-            var timeoutP=new Promise(function(_,reject){setTimeout(function(){reject(new Error("timeout"));},12000);});
             /* La fiche envoyée ne contient que des noms de fichiers, jamais
                de données d'image : une photo trop volumineuse ne peut pas
                faire échouer l'enregistrement des textes. */
             var cleanUpd=sanitizeDirect(upd);
             var safeUpd=cleanUpd.data;
-            function fallbackToTeam(reason){
-              var timeoutP2=new Promise(function(_,reject){setTimeout(function(){reject(new Error("timeout"));},12000);});
-              var writeP2=firebase.firestore().collection("centres").doc(user.uid).collection("mises_a_jour").add({createdAt:firebase.firestore.FieldValue.serverTimestamp(),statut:"en_attente",centreSlug:c.slug,centreNom:c.name,modifications:ch,ficheProposee:safeUpd});
-              Promise.race([writeP2,timeoutP2]).then(function(){showSent(true);}).catch(function(){
-                showError("La publication directe a échoué ("+reason+") et la transmission à l'équipe a échoué aussi. Vérifiez votre connexion puis réessayez.");
-              });
-            }
-            if(isPublished){
-              var direct={slug:c.slug,name:safeUpd.name,city:safeUpd.city,address:safeUpd.address,phone:safeUpd.phone,phoneIntl:phoneToIntl(safeUpd.phone),maps:safeUpd.maps,desc:safeUpd.desc,services:safeUpd.services,hours:safeUpd.hours,social:safeUpd.social,coverFile:safeUpd.coverFile,logoFile:safeUpd.logoFile,servicePhotos:safeUpd.servicePhotos,shopPhotos:safeUpd.shopPhotos,directUpdated:true,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
-              var writeP=firebase.firestore().collection("centres").doc(user.uid).set(direct,{merge:true});
-              Promise.race([writeP,timeoutP]).then(function(){showLive(cleanUpd.dropped);}).catch(function(err){
-                fallbackToTeam(err&&err.message==="timeout"?"délai dépassé":"écriture refusée");
-              });
-            }else{
-              var writeP2b=firebase.firestore().collection("centres").doc(user.uid).collection("mises_a_jour").add({createdAt:firebase.firestore.FieldValue.serverTimestamp(),statut:"en_attente",centreSlug:c.slug,centreNom:c.name,modifications:ch,ficheProposee:safeUpd});
-              Promise.race([writeP2b,timeoutP]).then(function(){showSent(false);}).catch(function(){
-                showError("La transmission à l'équipe a échoué. Vérifiez votre connexion puis réessayez.");
-              });
+            /* Photos d'abord : conversion WebP + envoi vers Storage. Les
+               URLs obtenues sont ensuite écrites dans la fiche ; si une
+               photo ne part pas, les textes sont quand même enregistrés
+               (avec le nom du fichier) et un message l'indique. On relit
+               aussi le document actuel pour ne pas perdre les photos de
+               services déjà en ligne (merge:true est superficiel). */
+            var docP=firebase.firestore().collection("centres").doc(user.uid).get().catch(function(){return null;});
+            Promise.all([processPhotoUploads(user.uid,photoFiles),docP]).then(function(res){
+              saveFirestore(res[0],res[1]);
+            }).catch(function(){
+              saveFirestore({urls:{cover:null,logo:null,shop:[],services:{}},failed:["photos"],storageAvailable:false},null);
+            });
+            function saveFirestore(photoRes,docSnap){
+              try{
+                var photoUrls=(photoRes&&photoRes.urls)||{cover:null,logo:null,shop:[],services:{}};
+                var photoFailed=(photoRes&&photoRes.failed)||[];
+                /* Fiche transmise à l'équipe (relecture) : textes + URLs des
+                   photos quand elles existent, pour que l'équipe les voie. */
+                var teamFiche=Object.assign({},safeUpd);
+                if(photoUrls.cover)teamFiche.cover=photoUrls.cover;
+                if(photoUrls.logo)teamFiche.logo=photoUrls.logo;
+                if(photoUrls.shop&&photoUrls.shop.length)teamFiche.photos=photoUrls.shop.slice();
+                var svcMap={};
+                if(docSnap&&docSnap.exists&&docSnap.data()&&docSnap.data().servicePhotos){var cur=docSnap.data().servicePhotos;Object.keys(cur).forEach(function(k){if(isImgSrc(cur[k]))svcMap[k]=cur[k];});}
+                Object.keys(photoUrls.services||{}).forEach(function(k){svcMap[k]=photoUrls.services[k];});
+                if(Object.keys(svcMap).length)teamFiche.servicePhotos=svcMap;
+                var timeoutP=new Promise(function(_,reject){setTimeout(function(){reject(new Error("timeout"));},12000);});
+                function fallbackToTeam(reason){
+                  var timeoutP2=new Promise(function(_,reject){setTimeout(function(){reject(new Error("timeout"));},12000);});
+                  var writeP2=null;
+                  try{writeP2=firebase.firestore().collection("centres").doc(user.uid).collection("mises_a_jour").add({createdAt:firebase.firestore.FieldValue.serverTimestamp(),statut:"en_attente",centreSlug:c.slug,centreNom:c.name,modifications:ch,ficheProposee:teamFiche});}catch(syncErr){console.error("Transmission à l'équipe refusée avant envoi :",syncErr);showError("La transmission à l'équipe a échoué. Vérifiez votre connexion puis réessayez.");return;}
+                  Promise.race([writeP2,timeoutP2]).then(function(){showSent(true);}).catch(function(){
+                    showError("La publication directe a échoué ("+reason+") et la transmission à l'équipe a échoué aussi. Vérifiez votre connexion puis réessayez.");
+                  });
+                }
+                if(isPublished){
+                  var direct={slug:c.slug,name:safeUpd.name,city:safeUpd.city,address:safeUpd.address,phone:safeUpd.phone,phoneIntl:phoneToIntl(safeUpd.phone),maps:safeUpd.maps,desc:safeUpd.desc,services:safeUpd.services,hours:safeUpd.hours,social:safeUpd.social,coverFile:safeUpd.coverFile,logoFile:safeUpd.logoFile,shopPhotos:safeUpd.shopPhotos,directUpdated:true,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+                  if(photoUrls.cover)direct.cover=photoUrls.cover;
+                  if(photoUrls.logo)direct.logo=photoUrls.logo;
+                  if(photoUrls.shop&&photoUrls.shop.length)direct.photos=photoUrls.shop.slice();
+                  if(Object.keys(svcMap).length)direct.servicePhotos=svcMap;
+                  var writeP=null;
+                  try{writeP=firebase.firestore().collection("centres").doc(user.uid).set(direct,{merge:true});}catch(syncErr){console.error("Écriture directe refusée avant envoi :",syncErr);fallbackToTeam("écriture refusée");return;}
+                  Promise.race([writeP,timeoutP]).then(function(){showLive(cleanUpd.dropped,photoFailed);}).catch(function(err){
+                    fallbackToTeam(err&&err.message==="timeout"?"délai dépassé":"écriture refusée");
+                  });
+                }else{
+                  var writeP2b=null;
+                  try{writeP2b=firebase.firestore().collection("centres").doc(user.uid).collection("mises_a_jour").add({createdAt:firebase.firestore.FieldValue.serverTimestamp(),statut:"en_attente",centreSlug:c.slug,centreNom:c.name,modifications:ch,ficheProposee:teamFiche});}catch(syncErr){console.error("Transmission à l'équipe refusée avant envoi :",syncErr);showError("La transmission à l'équipe a échoué. Vérifiez votre connexion puis réessayez.");return;}
+                  Promise.race([writeP2b,timeoutP]).then(function(){showSent(false);}).catch(function(){
+                    showError("La transmission à l'équipe a échoué. Vérifiez votre connexion puis réessayez.");
+                  });
+                }
+              }catch(err){
+                console.error("Envoi Espace centre — erreur technique :",err);
+                showError("Une erreur technique a empêché l'enregistrement. Vérifiez votre connexion puis réessayez.");
+              }
             }
           }catch(err){
-            showError(err&&err.message?err.message:"Erreur inattendue lors de l'envoi.");
+            /* Erreur technique (texte anglais de Firestore, etc.) : jamais
+               affichée telle quelle au centre — message générique en
+               français, détail dans la console uniquement. Les deux
+               messages français de notre code (session, Firestore
+               indisponible) sont affichés tels quels. */
+            var m=err&&err.message?err.message:"";
+            if(m.indexOf("Session expirée")===0||m.indexOf("Firestore n'est pas disponible")===0){showError(m);}
+            else{console.error("Envoi Espace centre — erreur technique :",err);showError("Une erreur technique a empêché l'enregistrement. Vérifiez votre connexion puis réessayez.");}
           }
         },function(){
           showError("Firebase est indisponible pour le moment. Vérifiez votre connexion puis réessayez.");
@@ -1558,8 +1728,11 @@ function viewEspaceDash(){
         toast("Session non connectée — rien n'a été envoyé");
       }
     }catch(err){
-      /* Aucun échec silencieux : toute erreur s'affiche dans la page. */
-      var msg=(err&&err.message)?err.message:"Erreur inattendue lors de l'envoi.";
+      /* Aucun échec silencieux : toute erreur s'affiche dans la page.
+         Le texte technique (anglais) n'est jamais montré au centre :
+         message générique en français, détail dans la console. */
+      console.error("Envoi Espace centre — erreur technique :",err);
+      var msg="Une erreur technique a empêché l'envoi. Vérifiez votre connexion puis réessayez.";
       if(resultEl)resultEl.innerHTML='<div class="notice"><b>Envoi impossible.</b> '+esc(msg)+' Rien n\'a été transmis — corrigez et renvoyez.</div>';
       var b0=document.getElementById("d-send");if(b0&&b0.textContent==="Enregistrement…"){b0.disabled=false;b0.textContent="Enregistrer";}
       toast(msg);
@@ -1869,7 +2042,7 @@ document.addEventListener("click",function(e){
 /* Firebase (Espace centre) : les SDK ne sont chargés que si la clé API du
    projet « annuaire-hijama » est renseignée dans FIREBASE_CONFIG ci-dessus. */
 if(FIREBASE_CONFIG.apiKey){
-  var fbScripts=["https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js","https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js","https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"];
+  var fbScripts=["https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js","https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js","https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js","https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"];
   (function loadFb(i){
     if(i>=fbScripts.length){
       if(!fbInit())return;
@@ -1902,7 +2075,7 @@ if(FIREBASE_CONFIG.apiKey){
       });
       return;
     }
-    var sc=document.createElement("script");sc.src=fbScripts[i];sc.onload=function(){loadFb(i+1);};document.head.appendChild(sc);
+    var sc=document.createElement("script");sc.src=fbScripts[i];sc.onload=function(){loadFb(i+1);};sc.onerror=function(){loadFb(i+1);};document.head.appendChild(sc);
   })(0);
 }
 lbBind();
