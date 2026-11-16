@@ -340,6 +340,30 @@ footer.site a{color:var(--ink2);display:block;padding:4px 0;min-height:32px}
 .toast.show{transform:translateX(-50%);opacity:1}
 button:disabled{opacity:.6;cursor:wait}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;scroll-behavior:auto!important}}
+/* Visionneuse photo (lightbox) — fiche publique du centre : clic sur
+   n'importe quelle photo (couverture, galerie, slider des services) pour
+   l'agrandir, puis navigation par flèches sans fermer. */
+.lb{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:18px}
+.lb.open{display:flex}
+.lb-backdrop{position:absolute;inset:0;background:rgba(5,22,13,.93)}
+.lb-figure{position:relative;z-index:1;margin:0;max-width:min(1060px,94vw);text-align:center;animation:lbIn .18s ease-out}
+@keyframes lbIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+.lb-figure img{max-width:100%;max-height:76vh;width:auto;height:auto;display:block;margin:0 auto;border-radius:14px;border:1px solid rgba(255,255,255,.18);box-shadow:0 24px 70px rgba(0,0,0,.65);background:#0b1f13}
+.lb-capbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;color:#f7ecd2;font-weight:700;font-size:.95rem;text-align:left}
+.lb-count{font-variant-numeric:tabular-nums;color:#e9c860;white-space:nowrap}
+.lb-btn{position:absolute;z-index:2;width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(10,32,19,.7);color:#fff;font-size:26px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0}
+.lb-btn:hover{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
+.lb-close{top:14px;right:14px}
+.lb-prev{left:12px;top:50%;transform:translateY(-50%)}
+.lb-next{right:12px;top:50%;transform:translateY(-50%)}
+.svc-slide img,.gallery img,.fiche-cover img{cursor:zoom-in}
+.svc-slide img:hover,.gallery img:hover{opacity:.92}
+@media (max-width:640px){
+  .lb{padding:10px}
+  .lb-btn{width:44px;height:44px;font-size:24px}
+  .lb-prev{left:6px}.lb-next{right:6px}
+  .lb-figure img{max-height:70vh}
+}
 </style>
 </head>
 <body>
@@ -358,6 +382,16 @@ button:disabled{opacity:.6;cursor:wait}
 </header>
 <main id="app"></main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="lb" id="lightbox" role="dialog" aria-modal="true" aria-label="Visionneuse photo">
+  <div class="lb-backdrop" id="lbBackdrop"></div>
+  <figure class="lb-figure">
+    <img id="lbImg" alt="Photo du centre">
+    <figcaption class="lb-capbar"><span id="lbCap"></span><span class="lb-count" id="lbCount"></span></figcaption>
+  </figure>
+  <button class="lb-btn lb-close" id="lbClose" type="button" aria-label="Fermer la visionneuse">×</button>
+  <button class="lb-btn lb-prev" id="lbPrev" type="button" aria-label="Photo précédente">‹</button>
+  <button class="lb-btn lb-next" id="lbNext" type="button" aria-label="Photo suivante">›</button>
+</div>
 <script>
 /* ============ DONNÉES : 375 villes et centres urbains (communes urbaines et centres urbains, recensement HCP 2024), par région ============ */
 var REGIONS = {
@@ -478,6 +512,73 @@ function serviceSliderHTML(c){
     +'<div class="svc-slider"><div class="svc-track" id="svcTrack">'+slides+'</div>'
     +'<div class="svc-nav"><button class="btn ghost" type="button" id="svcPrev" aria-label="Photos précédentes">← Précédent</button><button class="btn ghost" type="button" id="svcNext" aria-label="Photos suivantes">Suivant →</button></div></div></section>';
 }
+/* Visionneuse photo (lightbox) de la fiche publique : une seule liste de
+   photos par centre — couverture d'abord, puis photos du centre, puis
+   photos jointes aux services (sans doublon : une même URL n'apparaît
+   qu'une fois). Cliquer sur n'importe quelle photo de la fiche l'ouvre
+   en grand, nette (source pleine résolution), avec navigation par flèches
+   sans fermer, clavier et glisser tactile. */
+function centreLightboxPhotos(c){
+  var list=[],seen={};
+  function add(src,cap){if(!src||seen[src])return;seen[src]=1;list.push({src:src,cap:cap});}
+  if(c.cover)add(c.cover,"Photo de couverture — "+c.name);
+  var ph=c.photos||[];
+  ph.forEach(function(p,i){add(p,"Photo du centre"+(ph.length>1?" ("+(i+1)+")":""));});
+  var sp=c.servicePhotos||{};
+  (c.services||[]).forEach(function(s){if(sp[s])add(sp[s],s);});
+  return list;
+}
+function lbIndexOf(list,src){for(var i=0;i<list.length;i++){if(list[i].src===src)return i;}return -1;}
+var lbPhotos=[],lbIndex=0,lbTouchX=null;
+function lbShow(){
+  var it=lbPhotos[lbIndex];if(!it)return;
+  var img=document.getElementById("lbImg");
+  if(img){img.src=it.src;img.alt=it.cap||"Photo du centre";}
+  var cap=document.getElementById("lbCap");if(cap)cap.textContent=it.cap||"";
+  var cnt=document.getElementById("lbCount");if(cnt)cnt.textContent=(lbIndex+1)+" / "+lbPhotos.length;
+}
+function lbOpen(list,idx){
+  if(!list||!list.length)return;
+  lbPhotos=list;lbIndex=((idx%list.length)+list.length)%list.length;
+  lbShow();
+  var lb=document.getElementById("lightbox");
+  if(lb)lb.classList.add("open");
+  document.body.style.overflow="hidden";
+  document.addEventListener("keydown",lbKey);
+}
+function lbStep(d){
+  if(!lbPhotos.length)return;
+  lbIndex=((lbIndex+d)%lbPhotos.length+lbPhotos.length)%lbPhotos.length;
+  lbShow();
+}
+function lbClose(){
+  var lb=document.getElementById("lightbox");
+  if(lb)lb.classList.remove("open");
+  document.body.style.overflow="";
+  document.removeEventListener("keydown",lbKey);
+  lbPhotos=[];lbIndex=0;
+}
+function lbKey(e){
+  if(e.key==="Escape")lbClose();
+  else if(e.key==="ArrowLeft")lbStep(-1);
+  else if(e.key==="ArrowRight")lbStep(1);
+}
+function lbBind(){
+  var c=document.getElementById("lbClose");if(c)c.addEventListener("click",lbClose);
+  var p=document.getElementById("lbPrev");if(p)p.addEventListener("click",function(){lbStep(-1);});
+  var n=document.getElementById("lbNext");if(n)n.addEventListener("click",function(){lbStep(1);});
+  var b=document.getElementById("lbBackdrop");if(b)b.addEventListener("click",lbClose);
+  var lb=document.getElementById("lightbox");
+  if(lb){
+    lb.addEventListener("touchstart",function(e){if(e.touches&&e.touches.length)lbTouchX=e.touches[0].clientX;},{passive:true});
+    lb.addEventListener("touchend",function(e){
+      if(lbTouchX===null)return;
+      var x=(e.changedTouches&&e.changedTouches.length)?e.changedTouches[0].clientX:lbTouchX;
+      var dx=x-lbTouchX;lbTouchX=null;
+      if(Math.abs(dx)>40)lbStep(dx<0?1:-1);
+    },{passive:true});
+  }
+}
 /* Intitulés courts pour les cartes : les services très longs sont raccourcis
    à l'affichage (la fiche du centre garde les noms complets). */
 var SVC_SHORT={"Alignement osseux avec diagnostic précis":"Alignement osseux","Massage sportif aux outils de grattage (IASTM)":"Massage IASTM (grattage)","Acupuncture (aiguilles chinoises)":"Acupuncture"};
@@ -575,8 +676,59 @@ function viewVille(slug,q){
   +trackerBlock()+"</div>";
   window.scrollTo(0,0);
 }
-function viewCentre(slug){
-  var c=null;CENTRES.forEach(function(x){if(x.slug===slug)c=x;});
+/* Fiche en direct : fusion d'un document Firestore « centres » avec
+   l'entrée codée en dur. Les champs Firestore priment (avec les alias
+   ville/téléphone/adresse/description/horaires/image). Les photos ne sont
+   reprises que si ce sont de vraies sources d'image (URL ou data:) —
+   jamais un simple nom de fichier. */
+function phoneToIntl(p){
+  if(!p)return "";
+  var d=String(p).replace(/[^0-9+]/g,"");
+  if(d.indexOf("+")===0)return d;
+  if(d.indexOf("212")===0)return "+"+d;
+  if(d.charAt(0)==="0")return "+212"+d.slice(1);
+  return d;
+}
+function isImgSrc(v){return typeof v==="string"&&(v.indexOf("http://")===0||v.indexOf("https://")===0||v.indexOf("data:")===0||v.charAt(0)==="/");}
+function fp(v){v=String(v||"");return v.length+":"+v.slice(0,100);}
+function centreFromFirestore(dd,base){
+  if(!dd)return base;
+  var m={};Object.keys(base).forEach(function(k){m[k]=base[k];});
+  if(dd.name)m.name=dd.name;
+  if(dd.city||dd.ville)m.city=dd.city||dd.ville;
+  if(dd.address||dd.adresse)m.address=dd.address||dd.adresse;
+  if(dd.phone||dd.telephone)m.phone=dd.phone||dd.telephone;
+  if(dd.phoneIntl)m.phoneIntl=dd.phoneIntl;
+  else if(m.phone&&m.phone!==base.phone)m.phoneIntl=phoneToIntl(m.phone);
+  if(dd.maps)m.maps=dd.maps;
+  if(dd.desc||dd.description)m.desc=dd.desc||dd.description;
+  if(dd.services)m.services=dd.services;
+  if(dd.hours||dd.horaires)m.hours=dd.hours||dd.horaires;
+  if(dd.cover&&isImgSrc(dd.cover))m.cover=dd.cover;
+  else if(dd.image&&isImgSrc(dd.image))m.cover=dd.image;
+  if(dd.photos&&Array.isArray(dd.photos)&&dd.photos.length&&dd.photos.every(isImgSrc))m.photos=dd.photos;
+  if(dd.servicePhotos){
+    var sp={};Object.keys(base.servicePhotos||{}).forEach(function(k){sp[k]=base.servicePhotos[k];});
+    Object.keys(dd.servicePhotos).forEach(function(k){if(isImgSrc(dd.servicePhotos[k]))sp[k]=dd.servicePhotos[k];});
+    m.servicePhotos=sp;
+  }
+  if(dd.social)m.social=dd.social;
+  if(dd.logo&&isImgSrc(dd.logo))m.logo=dd.logo;
+  if(dd.slug)m.slug=dd.slug;
+  if(dd.verified!==undefined)m.verified=dd.verified;
+  if(m.city&&m.city!==base.city){
+    var found=null;CITIES.forEach(function(x){if(x.name===m.city)found=x;});
+    if(found)m.region=found.region;
+  }
+  return m;
+}
+function centreSig(c){
+  return JSON.stringify({name:c.name,city:c.city,address:c.address,phone:c.phone,maps:c.maps,desc:c.desc,services:c.services,hours:c.hours,cover:fp(c.cover),photos:(c.photos||[]).map(fp),servicePhotos:c.servicePhotos,social:c.social,logo:fp(c.logo)});
+}
+function viewCentre(slug,liveCentre){
+  var c=null;
+  if(liveCentre){c=liveCentre;}
+  else{CENTRES.forEach(function(x){if(x.slug===slug)c=x;});}
   if(!c){viewCentres("");return;}
   app.innerHTML='<div class="wrap"><p class="crumb"><a href="#/accueil">Accueil</a> › <a href="#/centres">Centres</a> › '+esc(c.city)+'</p>'
   +coverHTML(c,"fiche-cover",true)
@@ -625,6 +777,52 @@ function viewCentre(slug){
     var svcPrev=document.getElementById("svcPrev"),svcNext=document.getElementById("svcNext");
     if(svcPrev)svcPrev.addEventListener("click",function(){svcScroll(-1);});
     if(svcNext)svcNext.addEventListener("click",function(){svcScroll(1);});
+  }
+  /* Visionneuse : un clic sur n'importe quelle photo de la fiche
+     (couverture, galerie « Photos du centre », slider des services)
+     l'ouvre en grand dans la visionneuse, avec navigation par flèches
+     sans fermer. Les cartes sans photo (emplacement) ne s'ouvrent pas. */
+  (function(){
+    var lbList=centreLightboxPhotos(c);
+    if(!lbList.length)return;
+    var cov=document.querySelector(".fiche-cover img");
+    if(cov&&c.cover)cov.addEventListener("click",function(){var ix=lbIndexOf(lbList,c.cover);if(ix>-1)lbOpen(lbList,ix);});
+    document.querySelectorAll("#svcTrack .svc-slide img").forEach(function(im){
+      im.addEventListener("click",function(){var ix=lbIndexOf(lbList,im.getAttribute("src"));if(ix>-1)lbOpen(lbList,ix);});
+    });
+    document.querySelectorAll(".gallery a").forEach(function(a){
+      a.addEventListener("click",function(e){
+        e.preventDefault();
+        var im=a.querySelector("img");if(!im)return;
+        var ix=lbIndexOf(lbList,im.getAttribute("src"));if(ix>-1)lbOpen(lbList,ix);
+      });
+    });
+  })();
+  /* Fiche en direct : si la fiche affichée est la version codée en dur,
+     on relit le document Firestore du centre (par slug) et on ré-affiche
+     avec les données en direct si elles diffèrent. Sans document, sans
+     Firestore, ou si la lecture est refusée, la version codée en dur
+     reste affichée. Ne s'exécute qu'au premier affichage. Seul un document
+     mis à jour directement par le centre (directUpdated) prime : le
+     document initial ne contient que des données de liaison, pas la fiche
+     soignée. */
+  if(!liveCentre){
+    (function(){
+      var y0=window.scrollY||0;
+      fbWhenReady(function(){
+        try{
+          firebase.firestore().collection("centres").where("slug","==",slug).limit(1).get().then(function(snap){
+            var dd=null;snap.forEach(function(d){if(!dd)dd=d.data();});
+            if(!dd||dd.directUpdated!==true)return;
+            var live=centreFromFirestore(dd,c);
+            if(centreSig(c)!==centreSig(live)){
+              viewCentre(slug,live);
+              window.scrollTo(0,y0);
+            }
+          }).catch(function(){});
+        }catch(e){}
+      },function(){});
+    })();
   }
   /* Avis publiés : lus dans Firestore (collection « avis », statut
      « publie »). Aucun avis inventé : si la collection est vide ou
@@ -1256,7 +1454,13 @@ function viewEspaceDash(){
       if(shopInterior)ch.push("Photos de l'intérieur / des salles déposées : "+shopInterior);
       if(!ch.length){toast("Aucun changement par rapport à la fiche publiée");return;}
       espaceDraft.name=upd.name;espaceDraft.city=upd.city;espaceDraft.address=upd.address;espaceDraft.phone=upd.phone;espaceDraft.maps=upd.maps;espaceDraft.desc=upd.desc;espaceDraft.services=upd.services;espaceDraft.hours=upd.hours;espaceDraft.social=upd.social;
-      var lines=["DEMANDE DE MISE À JOUR — ESPACE CENTRE","======================================","Centre : "+c.name+" ("+c.slug+")","Compte : "+(espaceMode==="compte"&&espaceUser?espaceUser.email:"compte connecté"),"","Modifications demandées :"].concat(ch.map(function(x){return "- "+x;})).concat(["","Statut : en attente de relecture et de validation par l'équipe de l'annuaire.","Aucune modification n'est publiée avant acceptation."]);
+      /* Centre déjà accepté et publié : sa modification est publiée
+         directement, sans validation. Sinon, elle part en relecture. */
+      var isPublished=!!(c&&c.verified);
+      var tail=isPublished
+        ?["","Statut : publiée directement — votre fiche publique est à jour dès maintenant."]
+        :["","Statut : en attente de relecture et de validation par l'équipe de l'annuaire.","Aucune modification n'est publiée avant acceptation."];
+      var lines=["MISE À JOUR DE LA FICHE — ESPACE CENTRE","======================================","Centre : "+c.name+" ("+c.slug+")","Compte : "+(espaceMode==="compte"&&espaceUser?espaceUser.email:"compte connecté"),"","Modifications demandées :"].concat(ch.map(function(x){return "- "+x;})).concat(tail);
       var blob=new Blob([lines.join("\n")],{type:"text/plain;charset=utf-8"});var url=URL.createObjectURL(blob);
       function showSent(fallback){
         setPending(true);
@@ -1265,26 +1469,42 @@ function viewEspaceDash(){
         +'<p style="margin-top:12px"><a class="btn small" href="'+url+'" download="mise-a-jour-'+c.slug+'.txt">⬇ Télécharger le récapitulatif</a></p></div>';
         toast("Modifications envoyées — en attente de validation");
       }
+      function showLive(){
+        setPending(false);
+        document.getElementById("dashResult").innerHTML='<div class="success"><h3 style="margin-bottom:8px">✅ Modifications publiées</h3><p>'+ch.length+" modification"+(ch.length>1?"s publiées":" publiée")+' — votre fiche publique est à jour dès maintenant, sans validation. Conservez le récapitulatif ci-dessous : il liste exactement ce qui a changé.</p>'
+        +'<p style="margin-top:12px"><a class="btn small" href="'+url+'" download="mise-a-jour-'+c.slug+'.txt">⬇ Télécharger le récapitulatif</a></p></div>';
+        toast("Modifications publiées — fiche à jour");
+        /* La fiche publiée en mémoire suit la modification, pour que le
+           formulaire reste cohérent sans recharger la page. */
+        espaceDraft.servicePhotos=JSON.parse(JSON.stringify(svcPhotos));
+        espaceCentre=cloneCentre(espaceDraft);
+      }
       if(espaceMode==="compte"&&fbReady&&firebase.auth().currentUser){
         /* Attendre que Firebase soit prêt, puis enregistrer avec un délai
            maximal : un échec (règles, réseau, lenteur) s'affiche au lieu
-           de rester silencieux. */
+           de rester silencieux. Centre déjà publié → écriture directe
+           de la fiche (en direct, sans validation) ; sinon → demande
+           de mise à jour pour validation par l'équipe. */
         fbWhenReady(function(){
           try{
             if(typeof firebase.firestore!=="function")throw new Error("Firestore n'est pas disponible (bibliothèque non chargée).");
             var user=firebase.auth().currentUser;
             if(!user)throw new Error("Session expirée — reconnectez-vous.");
-            var writeP=firebase.firestore().collection("centres").doc(user.uid).collection("mises_a_jour").add({createdAt:firebase.firestore.FieldValue.serverTimestamp(),statut:"en_attente",centreSlug:c.slug,centreNom:c.name,modifications:ch,ficheProposee:upd});
             var timeoutP=new Promise(function(_,reject){setTimeout(function(){reject(new Error("timeout"));},12000);});
-            Promise.race([writeP,timeoutP]).then(function(){showSent(false);}).catch(function(err){
-              if(err&&err.message==="timeout"){
-                showSent(true);
-                toast("Envoi lent — le récapitulatif téléchargé fait foi");
-              }else{
-                showSent(true);
-                toast("Enregistrement en ligne impossible — récapitulatif téléchargé");
-              }
-            });
+            if(isPublished){
+              var direct={slug:c.slug,name:upd.name,city:upd.city,address:upd.address,phone:upd.phone,phoneIntl:phoneToIntl(upd.phone),maps:upd.maps,desc:upd.desc,services:upd.services,hours:upd.hours,social:upd.social,coverFile:upd.coverFile,logoFile:upd.logoFile,servicePhotos:upd.servicePhotos,shopPhotos:upd.shopPhotos,directUpdated:true,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+              var writeP=firebase.firestore().collection("centres").doc(user.uid).set(direct,{merge:true});
+              Promise.race([writeP,timeoutP]).then(function(){showLive();}).catch(function(err){
+                if(err&&err.message==="timeout"){showSent(true);toast("Envoi lent — le récapitulatif téléchargé fait foi");}
+                else{showSent(true);toast("Enregistrement en ligne impossible — récapitulatif téléchargé");}
+              });
+            }else{
+              var writeP2=firebase.firestore().collection("centres").doc(user.uid).collection("mises_a_jour").add({createdAt:firebase.firestore.FieldValue.serverTimestamp(),statut:"en_attente",centreSlug:c.slug,centreNom:c.name,modifications:ch,ficheProposee:upd});
+              Promise.race([writeP2,timeoutP]).then(function(){showSent(false);}).catch(function(err){
+                if(err&&err.message==="timeout"){showSent(true);toast("Envoi lent — le récapitulatif téléchargé fait foi");}
+                else{showSent(true);toast("Enregistrement en ligne impossible — récapitulatif téléchargé");}
+              });
+            }
           }catch(err){
             showSent(true);
             toast("Erreur d'envoi — récapitulatif téléchargé");
@@ -1552,6 +1772,7 @@ function viewAdminDash(){
   window.scrollTo(0,0);
 }
 function route(){
+  if(typeof lbClose==="function")lbClose();
   var h=location.hash.replace(/^#\/?/,"");
   var parts=h.split("?");var path=parts[0];var params=new URLSearchParams(parts[1]||"");
   var seg=path.split("/").filter(Boolean);
@@ -1643,6 +1864,7 @@ if(FIREBASE_CONFIG.apiKey){
     var sc=document.createElement("script");sc.src=fbScripts[i];sc.onload=function(){loadFb(i+1);};document.head.appendChild(sc);
   })(0);
 }
+lbBind();
 route();
 </script>
 </body>
