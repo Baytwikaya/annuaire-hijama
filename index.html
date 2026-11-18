@@ -221,9 +221,14 @@ section.block{padding:42px 0 10px}
 /* Photo d'un service (page service) : grande, visible sans clic, style hdaya.
    Jamais un lien <a href="data:..."> : un data URI géant ne s'ouvre pas
    dans un nouvel onglet (about:blank) — le clic ouvre la lightbox. */
-.svc-hero{margin-top:14px;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
-.svc-hero img{width:100%;height:auto;max-height:420px;object-fit:cover;display:block;cursor:zoom-in}
+.svc-hero{border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+.svc-hero img{width:100%;height:auto;max-height:560px;object-fit:cover;display:block;cursor:zoom-in}
 .svc-hero img:hover{opacity:.96}
+/* Page service, style hdaya : deux colonnes — infos à gauche, grande photo à droite. */
+.svc-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;margin-top:20px}
+.svc-layout .svc-info{display:flex;flex-direction:column;gap:16px}
+.svc-layout .svc-info .card{margin:0}
+@media(max-width:900px){.svc-layout{grid-template-columns:1fr}}
 /* Grille des photos par service (fiche publique) : flexbox centré —
    les cartes remplissent la ligne et une dernière ligne incomplète
    reste centrée au lieu d'être collée à gauche ; se replie
@@ -1238,18 +1243,18 @@ function viewService(centreSlug,svcIndex,liveCentre){
   +'<span class="badge gold">Hijama</span>'
   +'<h1 style="font-size:1.9rem;line-height:1.15;margin:10px 0 4px">'+esc(s)+'</h1>'
   +'<p class="fiche-sub">Service proposé par <a href="#/centre/'+c.slug+'" style="font-weight:700">'+esc(c.name)+'</a> · 📍 '+esc(c.city)+'</p>'
-  +'<div class="fiche-cols"><div class="fiche-main">'
-  +(src?'<div class="svc-hero"><img src="'+src+'" alt="Photo — '+esc(s)+'" loading="lazy" id="svcPhotoImg"></div>':"")
-  +(hasPrice?'<div class="price-box"><span class="price-label">Tarif</span><span class="price-val">'+price+' DH</span></div>':'<p class="notice" style="margin-top:14px">Les tarifs sont communiqués par le centre lors de la prise de rendez-vous.</p>')
+  +'<div class="svc-layout"><div class="svc-info">'
+  +(hasPrice?'<div class="price-box"><span class="price-label">Tarif</span><span class="price-val">'+price+' DH</span></div>':'<p class="notice" style="margin-top:0">Les tarifs sont communiqués par le centre lors de la prise de rendez-vous.</p>')
   +(desc?'<section class="card fiche-sec"><h3>À propos de ce service</h3><p>'+esc(desc)+'</p></section>':"")
-  +'</div><aside class="fiche-side">'
   +'<div class="card"><h3>'+esc(c.name)+'</h3><p style="margin:4px 0">📍 '+esc(c.city)+'</p><p style="margin:0 0 10px">'+esc(c.address)+'</p><a class="btn" href="#/centre/'+c.slug+'" style="width:100%;justify-content:center">Voir la fiche du centre</a></div>'
   +'<div class="card"><h3>Contact</h3>'
   +'<div class="phone-box"><div><span class="ph-label">TÉLÉPHONE</span><span class="ph-num">'+esc(phoneDisplay(c.phoneIntl))+'</span></div><button class="ph-copy" type="button" id="copyPhoneIcon" data-phone="'+esc(c.phoneIntl)+'" aria-label="Copier le numéro" title="Copier le numéro">📋</button></div>'
   +'<a class="btn" href="tel:'+c.phoneIntl+'" style="width:100%;justify-content:center;margin-top:10px">📞 Appeler le centre</a>'
   +'<button class="btn ghost" type="button" id="copyPhoneBtn" data-phone="'+esc(c.phoneIntl)+'" style="width:100%;justify-content:center;margin-top:8px">📋 Copier le numéro</button>'
   +(waHref?'<a class="btn" href="'+waHref+'" target="_blank" rel="noopener" style="width:100%;justify-content:center;margin-top:8px">💬 WhatsApp</a>':"")
-  +'</div></aside></div>'
+  +'</div></div>'
+  +(src?'<div class="svc-hero"><img src="'+src+'" alt="Photo — '+esc(s)+'" loading="lazy" id="svcPhotoImg"></div>':"")
+  +'</div>'
   +'<p style="margin-top:18px"><a href="#/centre/'+c.slug+'" style="font-weight:700">← Retour à la fiche de '+esc(c.name)+'</a></p>'
   +'</div>';
   function copyFallback(txt,done){
