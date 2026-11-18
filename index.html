@@ -255,18 +255,22 @@ section.block{padding:42px 0 10px}
 .hour-row .closed-lbl input{width:auto;min-height:0;padding:0;accent-color:var(--green)}
 .hour-row.is-closed select{opacity:.45}
 @media(max-width:560px){.hour-row{grid-template-columns:80px 1fr auto 1fr}.hour-row .closed-lbl{grid-column:1/-1}}
-/* Lignes de services avec photo jointe (Espace centre) : nom + prix + description + photo + retirer.
-   Le prix est facultatif : vide = aucun tarif affiché pour ce service. */
-.svc-slot{display:grid;grid-template-columns:1fr 110px auto auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface2)}
+/* Lignes de services avec photo jointe (Espace centre) : 1re ligne nom +
+   prix + photo + coche verte si une photo est publiée + retirer ; 2e ligne
+   description en pleine largeur, sous le nom et le prix. Le prix est
+   facultatif : vide = aucun tarif affiché pour ce service.
+   (Sélecteur .svc-row.svc-slot : la règle .svc-row{display:flex} définie
+   plus bas écrasait le grid et tassait tout sur une seule ligne.) */
+.svc-row.svc-slot{display:grid;grid-template-columns:1fr 110px auto auto auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface2)}
 .svc-slot .svc-input{width:100%}
 .svc-slot .svc-price{width:100%}
 .svc-slot .svc-desc{grid-column:1/-1;width:100%}
 .svc-slot .svc-photo-btn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font-weight:700;font-size:.88rem;cursor:pointer;background:var(--surface);color:var(--ink);white-space:nowrap;min-height:44px}
 .svc-slot .svc-photo-btn:hover{border-color:var(--green);color:var(--green)}
 .svc-slot .svc-photo-btn input[type="file"]{display:none}
-.svc-slot .svc-photo-picked{grid-column:1/-1;font-size:.84rem;font-weight:700;color:var(--green);display:none;margin:0}
-.svc-slot .svc-photo-picked.show{display:block}
-@media(max-width:560px){.svc-slot{grid-template-columns:1fr auto}.svc-slot .svc-price{grid-column:1/-1}.svc-slot .svc-photo-btn{grid-column:1/-1;justify-content:center}}
+.svc-slot .svc-photo-picked{display:none;color:var(--green);font-weight:800;font-size:1.2rem;line-height:1}
+.svc-slot .svc-photo-picked.show{display:inline-flex;align-items:center}
+@media(max-width:560px){.svc-row.svc-slot{grid-template-columns:1fr auto}.svc-slot .svc-price{grid-column:1/-1}.svc-slot .svc-photo-btn{grid-column:1/-1;justify-content:center}}
 @media(max-width:700px){.fiche-cover{aspect-ratio:16/8.5}}
 .stars{color:var(--gold);font-weight:800}
 /* Avis de l'annuaire + vues de la fiche */
@@ -1700,29 +1704,30 @@ function hourRowHTML(h,i){
     +'<label class="closed-lbl"><input type="checkbox" class="hour-closed"'+(closed?" checked":"")+'> Fermé</label>'
     +'</div>';
 }
-/* Ligne de service : nom du service + son prix (facultatif) + sa
-   description (facultative) + sa photo, dans la même ligne. Le prix
-   vide = aucun tarif affiché pour ce service. La photo jointe ici est
-   celle de la grille publique « Les services en images ». Un service
-   sans photo affiche une carte propre avec son nom. */
-function svcRowHTML(name,photoLabel,price,desc){
+/* Ligne de service (Espace centre) : 1re ligne nom + prix (facultatif) +
+   photo + coche verte si une photo est publiée + retirer ; 2e ligne
+   description (facultative) en pleine largeur, sous le nom et le prix.
+   Le prix vide = aucun tarif affiché pour ce service. La photo jointe
+   ici est celle de la grille publique « Les services en images ». Un
+   service sans photo affiche une carte propre avec son nom. */
+function svcRowHTML(name,hasPhoto,price,desc){
   return '<div class="svc-row svc-slot">'
     +'<input type="text" class="svc-input" value="'+esc(name||"")+'" placeholder="Nom du service — ex. Hijama humide">'
     +'<input type="number" class="svc-price" min="0" step="1" inputmode="numeric" value="'+(price||"")+'" placeholder="Prix (DH)" aria-label="Prix en dirhams — facultatif">'
     +'<label class="svc-photo-btn">📷 Photo<input type="file" class="svc-photo" accept="image/jpeg,image/png,image/webp" aria-label="Photo de ce service"></label>'
+    +'<span class="svc-photo-picked'+(hasPhoto?" show":"")+'" title="Photo publiée pour ce service">'+(hasPhoto?"✓":"")+'</span>'
     +'<button type="button" class="btn-del svc-del" aria-label="Retirer ce service">✕</button>'
     +'<input type="text" class="svc-desc" value="'+esc(desc||"")+'" placeholder="Description — facultatif (ex. ventouses médicales à usage unique)" aria-label="Description du service — facultatif">'
-    +'<span class="svc-photo-picked'+(photoLabel?" show":"")+'">'+(photoLabel?esc(photoLabel):"")+'</span>'
     +'</div>';
 }
 function svcRowsHTML(services,svcPhotos,svcPrices,svcDescs){
   var rows=(services||[]).map(function(s){
-    var lbl=(svcPhotos&&svcPhotos[s])?"📷 Photo publiée pour ce service":"";
+    var hp=!!(svcPhotos&&svcPhotos[s]);
     var pr=(svcPrices&&typeof svcPrices[s]==="number")?svcPrices[s]:"";
     var ds=(svcDescs&&svcDescs[s])?svcDescs[s]:"";
-    return svcRowHTML(s,lbl,pr,ds);
+    return svcRowHTML(s,hp,pr,ds);
   });
-  while(rows.length<5)rows.push(svcRowHTML("","","",""));
+  while(rows.length<5)rows.push(svcRowHTML("",false,"",""));
   return rows.join("");
 }
 function espaceStartSession(mode,centre){
@@ -2042,19 +2047,20 @@ function viewEspaceDash(){
      sans limite — le centre ajoute autant de services qu'il propose. */
   document.getElementById("svcAddRow").addEventListener("click",function(){
     var list=document.getElementById("svcList");
-    var tmp=document.createElement("div");tmp.innerHTML=svcRowHTML("","","","");
+    var tmp=document.createElement("div");tmp.innerHTML=svcRowHTML("",false,"","");
     var row=tmp.firstChild;list.appendChild(row);
     bindSvcDel();
     var inp=row.querySelector(".svc-input");if(inp)inp.focus();
     markDirty();
   });
-  /* Choix d'une photo dans une ligne de service : le nom du fichier
-     s'affiche sous la ligne, et la ligne est marquée comme modifiée. */
+  /* Choix d'une photo dans une ligne de service : la coche verte
+     s'affiche à côté du bouton Photo, et la ligne est marquée comme
+     modifiée. */
   document.getElementById("svcList").addEventListener("change",function(e){
     if(e.target&&e.target.classList&&e.target.classList.contains("svc-photo")){
       var row=e.target.closest(".svc-slot");
       var picked=row?row.querySelector(".svc-photo-picked"):null;
-      if(picked&&e.target.files&&e.target.files.length){picked.textContent="📷 "+e.target.files[0].name;picked.classList.add("show");}
+      if(picked&&e.target.files&&e.target.files.length){picked.textContent="✓";picked.classList.add("show");}
       markDirty();
     }
   });
