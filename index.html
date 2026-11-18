@@ -221,6 +221,9 @@ section.block{padding:42px 0 10px}
 .svc-hero{border-radius:16px;overflow:hidden;border:1px solid var(--line)}
 .svc-hero img{width:100%;height:auto;max-height:560px;object-fit:cover;display:block;cursor:zoom-in}
 .svc-hero img:hover{opacity:.96}
+/* Petit prix sous la photo du service (page service) : pastille dorée. */
+.svc-hero-price{margin:10px 0 0;text-align:center}
+.svc-hero-price span{display:inline-block;padding:4px 16px;border-radius:99px;background:var(--gold-soft);border:1px solid var(--gold);color:var(--gold);font-weight:800;font-size:.95rem}
 /* Page service, style hdaya : deux colonnes — infos à gauche, grande photo à droite. */
 .svc-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;margin-top:20px}
 .svc-layout .svc-info{display:flex;flex-direction:column;gap:16px}
@@ -1275,7 +1278,7 @@ function viewService(centreSlug,svcIndex,liveCentre){
   +'<button class="btn ghost" type="button" id="copyPhoneBtn" data-phone="'+esc(c.phoneIntl)+'" style="width:100%;justify-content:center;margin-top:8px">📋 Copier le numéro</button>'
   +(waHref?'<a class="btn" href="'+waHref+'" target="_blank" rel="noopener" style="width:100%;justify-content:center;margin-top:8px">💬 WhatsApp</a>':"")
   +'</div></div>'
-  +(src?'<div class="svc-hero"><img src="'+src+'" alt="Photo — '+esc(s)+'" loading="lazy" id="svcPhotoImg"></div>':"")
+  +(src?'<div class="svc-hero"><img src="'+src+'" alt="Photo — '+esc(s)+'" loading="lazy" id="svcPhotoImg"></div>'+(hasPrice?'<p class="svc-hero-price"><span>'+price+' DH</span></p>':""):"")
   +'</div>'
   +'<p style="margin-top:18px"><a href="#/centre/'+c.slug+'" style="font-weight:700">← Retour à la fiche de '+esc(c.name)+'</a></p>'
   +'</div>';
