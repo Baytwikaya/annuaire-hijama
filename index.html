@@ -53,6 +53,7 @@ html[data-theme="dark"]{
 /* Bouton de bascule du thème (soleil/lune) dans l'en-tête. */
 .theme-toggle{margin-left:2px;flex:none;width:40px;height:40px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font-size:1.15rem;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0}
 .theme-toggle:hover{background:var(--surface2)}
+.theme-toggle svg{display:block}
 /* Bloc téléphone de la fiche Contact (style Khdemni, couleurs du site). */
 .phone-box{border:1.5px solid var(--line);border-radius:12px;background:var(--surface2);padding:10px 12px;display:flex;align-items:center;gap:10px}
 .phone-box .ph-label{display:block;font-size:.72rem;font-weight:800;letter-spacing:.08em;color:var(--ink2)}
@@ -250,10 +251,10 @@ section.block{padding:42px 0 10px}
 .viewstats .lbl{font-size:.9rem;color:var(--ink2);font-weight:600}
 .viewstats .val{font-family:"Playfair Display",Georgia,serif;font-size:1.45rem;font-weight:700;color:var(--gold);line-height:1}
 .viewstats .val small{display:block;font-family:"Manrope",sans-serif;font-size:.68rem;font-weight:700;color:var(--ink2);letter-spacing:.04em;margin-top:3px;text-align:right}
-form.avis{display:grid;gap:13px;margin-top:14px}
+form.avis{display:grid;gap:10px;margin-top:12px}
 form.avis label{font-weight:700;font-size:.9rem;display:block;margin-bottom:5px}
 form.avis input[type="text"],form.avis input[type="date"],form.avis textarea{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit}
-form.avis textarea{min-height:90px;resize:vertical}
+form.avis textarea{min-height:64px;resize:vertical}
 .stars-input{display:flex;gap:6px;flex-wrap:wrap}
 .stars-input .staropt{display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--line);border-radius:99px;padding:6px 12px;cursor:pointer;font-weight:700;font-size:.9rem;min-height:40px;background:var(--surface)}
 .stars-input .staropt input{width:18px;height:18px;min-height:18px;accent-color:var(--gold);margin:0}
@@ -446,7 +447,7 @@ button:disabled{opacity:.6;cursor:wait}
       <a href="#/espace">Espace centre</a>
       <a class="cta" href="#/inscription">Inscrire un centre</a>
     </nav>
-    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Basculer entre le thème clair et sombre" title="Basculer entre le thème clair et sombre">🌙</button>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Basculer entre le thème clair et sombre" title="Basculer entre le thème clair et sombre"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
   </div>
 </header>
 <main id="app"></main>
@@ -549,11 +550,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 var app=document.getElementById("app");
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 /* Bascule thème clair/sombre (bouton soleil/lune dans l'en-tête). Le choix enregistré est prioritaire ; sinon on suit le système. */
+/* Icônes monochromes (un seul ton, currentColor) : simple motif, pas de dessin réaliste. */
+var ICON_MOON='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+var ICON_SUN='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
 function applyTheme(t,save){
   try{document.documentElement.setAttribute("data-theme",t);}catch(e){}
   if(save){try{localStorage.setItem("annuaire-theme",t);}catch(e){}}
   var b=document.getElementById("themeToggle");
-  if(b){b.textContent=(t==="dark"?"☀️":"🌙");b.setAttribute("aria-label",t==="dark"?"Passer au thème clair":"Passer au thème sombre");}
+  if(b){b.innerHTML=(t==="dark"?ICON_SUN:ICON_MOON);b.setAttribute("aria-label",t==="dark"?"Passer au thème clair":"Passer au thème sombre");}
 }
 function initTheme(){
   var t=null;
@@ -970,18 +974,16 @@ function viewCentre(slug,liveCentre){
   +adSlot(false)
   +(photos.length?'<section class="card fiche-sec"><h3>Photos du centre</h3><p>Photos transmises par le centre et relues par notre équipe avant publication.</p><div class="gallery">'+photos.map(function(p,i){return '<a href="'+p+'" target="_blank" rel="noopener"><img src="'+p+'" alt="Photo '+(i+1)+" — "+esc(c.name)+'" loading="lazy"></a>';}).join("")+'</div></section>':"")
   +'<section class="card fiche-sec" id="avisCard"><span class="badge gold">Avis de l\'annuaire</span><h3 style="margin-top:8px">Les avis de nos visiteurs</h3>'
-  +'<p>Les avis publiés ici sont <b>ceux de cet annuaire</b> — déposés sur cette page, relus par notre équipe avant publication. Nous n\'importons ni n\'affichons les avis d\'autres plateformes. <button type="button" class="linklike" id="goAvis">Laisser un avis →</button></p>'
-  +'<div id="avisPublished"><div class="empty" style="margin-top:12px"><p>Chargement des avis publiés…</p></div></div>'
+  +'<p>Les avis publiés ici sont <b>ceux de cet annuaire</b> — déposés sur cette page, relus par notre équipe avant publication. Nous n\'importons ni n\'affichons les avis d\'autres plateformes.</p>'
   +'<div id="avisZone"><form class="avis" id="avisForm" novalidate>'
   +'<div><label>Votre note *</label><div class="stars-input" id="starsInput">'
   +[5,4,3,2,1].map(function(n){return '<label class="staropt"><input type="radio" name="a-note" value="'+n+'"><span class="st">★</span>'+n+"</label>";}).join("")
   +'</div></div>'
   +'<div><label for="a-name">Votre nom ou prénom *</label><input type="text" id="a-name" placeholder="Ex. Salma B."></div>'
-  +'<div><label for="a-date">Date de votre séance</label><input type="date" id="a-date"></div>'
-  +'<div><label for="a-text">Votre avis *</label><textarea id="a-text" placeholder="Accueil, propreté, déroulement de la séance, suivi… Racontez votre expérience."></textarea></div>'
-  +'<label class="check"><input type="checkbox" id="a-visit"><span><b>Avis réel :</b> je confirme avoir réellement effectué une séance dans ce centre. Les avis de complaisance ou déposés par le centre lui-même sont refusés. *</span></label>'
-  +'<div class="notice">Votre avis est <b>envoyé directement à notre équipe</b> dès l\'envoi du formulaire. Il sera relu puis publié par notre équipe — jamais automatiquement.</div>'
-  +'<div style="text-align:center"><button class="btn" type="submit" id="avisSubmit">Envoyer mon avis pour relecture</button></div></form></div></section>'
+  +'<div><label for="a-text">Votre avis *</label><textarea id="a-text" rows="3" placeholder="Accueil, propreté, déroulement de la séance, suivi… Racontez votre expérience."></textarea></div>'
+  +'<p class="notice" style="margin:0">Votre avis sera relu par notre équipe avant publication.</p>'
+  +'<div style="text-align:center"><button class="btn" type="submit" id="avisSubmit">Envoyer mon avis pour relecture</button></div></form></div>'
+  +'<div id="avisPublished"><div class="empty" style="margin-top:12px"><p>Chargement des avis publiés…</p></div></div></section>'
   +'<section class="card fiche-sec"><h3>Horaires</h3><table class="hours" style="margin-top:8px">'+c.hours.map(function(h){return "<tr><td>"+esc(hourDay(h))+"</td><td>"+esc(hourRange(h))+"</td></tr>";}).join("")+"</table></section>"
   +'</div><aside class="fiche-side">'
   +'<div class="card"><h3>Contact</h3>'
@@ -990,7 +992,6 @@ function viewCentre(slug,liveCentre){
   +'<button class="btn ghost" type="button" id="copyPhoneBtn" data-phone="'+esc(c.phoneIntl)+'" style="width:100%;justify-content:center;margin-top:8px">📋 Copier le numéro</button>'
   +(waHref?'<a class="btn" href="'+waHref+'" target="_blank" rel="noopener" style="width:100%;justify-content:center;margin-top:8px">💬 WhatsApp</a>':"")
   +(waHref?'<div class="qr-block" id="waQrBlock"><div id="waQr" role="img" aria-label="QR code WhatsApp"></div><p>Continuer sur mobile — Scannez pour ouvrir WhatsApp</p></div>':"")
-  +(c.email?'<a class="btn" href="mailto:'+esc(c.email)+'" style="width:100%;justify-content:center;margin-top:8px">✉️ E-mail</a>':"")
   +'<div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost small" type="button" id="shareBtn" style="flex:1">↗ Partager</button><button class="btn ghost small like-btn" type="button" id="likeBtn" style="flex:1" aria-pressed="false">♡ J\'aime</button></div></div>'
   +'<div class="card"><h3>Adresse</h3>'
   +'<a class="mini-map" href="'+esc(c.maps)+'" target="_blank" rel="noopener" aria-label="Voir sur Google Maps"><span class="mini-pin" aria-hidden="true">📍</span></a>'
@@ -1061,11 +1062,18 @@ function viewCentre(slug,liveCentre){
         setAvisCount(list.length);
         var sum=0;list.forEach(function(a){sum+=(a.note||0);});
         var avg=(sum/list.length).toFixed(1).replace(".",",");
-        zone.innerHTML='<p class="avis-line" style="margin-top:12px"><span class="stars" aria-hidden="true">'+"★".repeat(Math.round(sum/list.length))+"☆".repeat(5-Math.round(sum/list.length))+'</span><span><b>'+avg+' / 5</b> — '+list.length+' avis publié'+(list.length>1?"s":"")+' sur cet annuaire</span></p>'
-        +list.map(function(a){
+        var head='<p class="avis-line" style="margin-top:12px"><span class="stars" aria-hidden="true">'+"★".repeat(Math.round(sum/list.length))+"☆".repeat(5-Math.round(sum/list.length))+'</span><span><b>'+avg+' / 5</b> — '+list.length+' avis publié'+(list.length>1?"s":"")+' sur cet annuaire</span></p>';
+        function avisCard(a){
           var st="★".repeat(a.note||0)+"☆".repeat(5-(a.note||0));
           return '<article class="card" style="margin-top:12px;box-shadow:none"><div class="avis-line"><span class="stars" aria-hidden="true">'+st+'</span><b>'+esc(a.nom||"Visiteur")+'</b>'+(a.dateSeance?'<span>· Séance du '+esc(a.dateSeance)+'</span>':"")+'</div><p style="margin-top:8px">'+esc(a.texte||"")+'</p></article>';
-        }).join("");
+        }
+        function renderAvis(all){
+          var shown=all?list:list.slice(0,3);
+          zone.innerHTML=head+shown.map(avisCard).join("")+((!all&&list.length>3)?'<div style="text-align:center;margin-top:12px"><button class="btn ghost" type="button" id="avisMore">Voir les '+list.length+' avis</button></div>':"");
+          var more=document.getElementById("avisMore");
+          if(more)more.addEventListener("click",function(){renderAvis(true);});
+        }
+        renderAvis(false);
       }).catch(emptyState);
     },emptyState);
   })();
@@ -1141,17 +1149,15 @@ function viewCentre(slug,liveCentre){
     var txt=document.getElementById("a-text").value.trim();
     if(!sel){toast("Choisissez une note (de 1 à 5 étoiles)");return;}
     if(!name||!txt){toast("Veuillez indiquer votre nom et le texte de votre avis");return;}
-    if(!document.getElementById("a-visit").checked){toast("Confirmez que vous avez réellement fait une séance dans ce centre");return;}
-    var dval=document.getElementById("a-date").value||"";
     var btn=document.getElementById("avisSubmit");
     if(btn){btn.disabled=true;btn.textContent="Envoi en cours…";}
-    fbAddDoc("avis",{centreSlug:c.slug,centreNom:c.name,ville:c.city,note:parseInt(sel.value,10),nom:name,dateSeance:dval,texte:txt,visiteConfirmee:true}).then(function(){
+    fbAddDoc("avis",{centreSlug:c.slug,centreNom:c.name,ville:c.city,note:parseInt(sel.value,10),nom:name,texte:txt}).then(function(){
       document.getElementById("avisZone").innerHTML='<div class="success" style="margin-top:14px"><h3 style="margin-bottom:8px">✅ Avis envoyé — merci, '+esc(name)+".</h3>"
       +"<p>Vous avez noté ce centre <b>"+sel.value+" / 5</b>. Votre avis est bien arrivé chez notre équipe : il paraîtra sur cette fiche après relecture — nous vérifions qu'il correspond à une séance réelle avant de le publier.</p></div>";
       toast("Avis envoyé — merci !");
     }).catch(function(){
       if(btn){btn.disabled=false;btn.textContent="Envoyer mon avis pour relecture";}
-      var lines=["AVIS VISITEUR — ANNUAIRE HIJAMA","===============================","Centre : "+c.name,"Ville : "+c.city,"Note : "+sel.value+" / 5","Nom du visiteur : "+name,"Date de la séance : "+(dval||"—"),"Avis : "+txt,"","Statut : envoi en ligne échoué — fichier de secours téléchargé par le visiteur."];
+      var lines=["AVIS VISITEUR — ANNUAIRE HIJAMA","===============================","Centre : "+c.name,"Ville : "+c.city,"Note : "+sel.value+" / 5","Nom du visiteur : "+name,"Avis : "+txt,"","Statut : envoi en ligne échoué — fichier de secours téléchargé par le visiteur."];
       var blob=new Blob([lines.join("\n")],{type:"text/plain;charset=utf-8"});var url=URL.createObjectURL(blob);
       var zone=document.getElementById("avisZone");
       var warn=document.createElement("div");
