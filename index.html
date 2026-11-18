@@ -150,6 +150,10 @@ section.block{padding:42px 0 10px}
 .centre-card .svc-line{font-size:.86rem;color:var(--ink2);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.45}
 .centre-card .svc-more{align-self:flex-start;background:none;border:none;padding:2px 0;min-height:32px;font:inherit;font-size:.84rem;font-weight:700;color:var(--green);cursor:pointer;text-align:left}
 .centre-card .svc-more:hover{text-decoration:underline}
+.centre-card .price-from{font-size:.95rem;font-weight:800;color:var(--green-d);margin:0}
+.price-box{display:flex;align-items:baseline;gap:12px;background:var(--gold-soft);border:1px solid var(--gold);border-radius:14px;padding:14px 18px}
+.price-box .price-label{font-weight:700;color:var(--ink2);font-size:.9rem}
+.price-box .price-val{font-size:1.7rem;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
 .centre-card .svc-all{margin-top:2px}
 .centre-card .svc-all[hidden]{display:none!important}
 .centre-card .svc-all .tag{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
@@ -493,6 +497,8 @@ var CENTRES=[{
   phone:"0664651301", phoneIntl:"+212664651301",
   maps:"https://www.google.com/maps/place/%D8%A8%D9%8A%D8%AA+%D8%A7%D9%84%D9%88%D9%82%D8%A7%D9%8A%D8%A9%E2%80%AD/@33.5613106,-7.5984306,17z/data=!3m1!4b1!4m6!3m5!1s0xda63376bc6640ff:0xd097ecd4ea8057d!8m2!3d33.5613106!4d-7.5984306!16s%2Fg%2F11rkf32518!5m1!1e4?entry=ttu&g_ep=EgoyMDI2MTAyMC4wIKXMDSoASAFQAw%3D%3D",
   services:["Hijama humide (sanguine)","Hijama sèche","Alignement osseux avec diagnostic précis","Acupuncture (aiguilles chinoises)","Massage sportif complet","Massage sportif aux outils de grattage (IASTM)","Formule hijama complète"],
+  servicePrices:{"Hijama humide (sanguine)":100,"Hijama sèche":100,"Alignement osseux avec diagnostic précis":100,"Acupuncture (aiguilles chinoises)":150,"Massage sportif complet":200,"Massage sportif aux outils de grattage (IASTM)":200,"Formule hijama complète":150},
+  serviceDesc:{"Hijama humide (sanguine)":"Hijama humide : ventouses posées après de petites scarifications superficielles. Ventouses médicales en plastique à usage unique, ouvertes devant vous, après un échange sur vos antécédents.","Hijama sèche":"Hijama sèche : ventouses posées sans scarification, pour stimuler la circulation et détendre les muscles. Souvent associée à un léger massage.","Alignement osseux avec diagnostic précis":"Alignement osseux avec diagnostic précis : bilan puis réalignement des articulations et de la colonne, avec un diagnostic préalable.","Acupuncture (aiguilles chinoises)":"Acupuncture : pose d'aiguilles fines et stériles à usage unique sur des points précis, selon la médecine traditionnelle chinoise.","Massage sportif complet":"Massage sportif complet : massage profond de tout le corps, adapté aux sportifs et aux tensions musculaires.","Massage sportif aux outils de grattage (IASTM)":"Massage sportif aux outils de grattage (IASTM) : travail des tissus avec des outils spécifiques pour les adhérences et les tensions.","Formule hijama complète":"Formule hijama complète : massage au pistolet de massage, puis hijama sèche, puis hijama humide. Ventouses médicales en plastique à usage unique."},
   hours:[["Lundi","8h30 – 16h30"],["Mardi","8h30 – 16h30"],["Mercredi","8h30 – 16h30"],["Jeudi","8h30 – 16h30"],["Vendredi","8h30 – 11h30"],["Samedi","8h30 – 16h30"],["Dimanche","8h30 – 16h30"]],
   desc:"Centre casablancais spécialisé en hijama, alignement osseux et acupuncture, ouvert 7 jours sur 7. La formule hijama complète associe massage au pistolet de massage, hijama sèche puis hijama humide, avec des ventouses médicales en plastique à usage unique. Premier centre publié de l'annuaire : locaux photographiés et contrôle d'hygiène validé par notre équipe."
 }];
@@ -706,7 +712,15 @@ function cardAvisLine(c){
   return '<span>Avis publiés après relecture — '+link+'</span>';
 }
 function cardLoc(c){var a=(c.address||"").split(",");var area=a.length>1?a[0].trim():"";return area?area+", "+c.city:c.city;}
+/* Prix minimum d'un centre (pour « À partir de X DH » sur sa carte) :
+   le plus petit prix de servicePrices. null si aucun prix défini. */
+function minPrice(c){
+  var pr=c.servicePrices||{};var min=null;
+  Object.keys(pr).forEach(function(k){var v=pr[k];if(typeof v==="number"&&isFinite(v)&&v>0&&(min===null||v<min))min=v;});
+  return min;
+}
 function centreCard(c){
+  var mp=minPrice(c);
   return '<article class="card centre-card" data-href="#/centre/'+c.slug+'">'+coverHTML(c,"cover")
   +avatarHTML(c)
   +'<div class="card-body">'
@@ -714,6 +728,7 @@ function centreCard(c){
   +'<div class="avis-line">'+cardAvisLine(c)+'</div>'
   +'<p class="meta">📍 '+esc(cardLoc(c))+'</p>'
   +'<p class="svc-line">'+c.services.slice(0,2).map(function(s){return esc(svcShort(s));}).join(" · ")+(c.services.length>2?" …":"")+'</p>'
+  +(mp!==null?'<p class="price-from">À partir de '+mp+' DH</p>':"")
   +'<div class="actions"><a class="btn small" href="#/centre/'+c.slug+'">Voir la fiche</a><a class="btn small ghost" href="tel:'+c.phoneIntl+'" onclick="event.stopPropagation()">📞 '+c.phone+"</a></div>"
   +'</div></article>';
 }
@@ -841,6 +856,16 @@ function centreFromFirestore(dd,base){
     Object.keys(dd.servicePhotos).forEach(function(k){if(isImgSrc(dd.servicePhotos[k]))sp[k]=dd.servicePhotos[k];});
     m.servicePhotos=sp;
   }
+  if(dd.servicePrices){
+    var pr={};Object.keys(base.servicePrices||{}).forEach(function(k){pr[k]=base.servicePrices[k];});
+    Object.keys(dd.servicePrices).forEach(function(k){var v=dd.servicePrices[k];if(typeof v==="number"&&isFinite(v)&&v>0)pr[k]=v;});
+    m.servicePrices=pr;
+  }
+  if(dd.serviceDesc){
+    var sd={};Object.keys(base.serviceDesc||{}).forEach(function(k){sd[k]=base.serviceDesc[k];});
+    Object.keys(dd.serviceDesc).forEach(function(k){var v=dd.serviceDesc[k];if(typeof v==="string"&&v.trim())sd[k]=v;});
+    m.serviceDesc=sd;
+  }
   if(dd.social)m.social=dd.social;
   if(dd.logo&&isImgSrc(dd.logo))m.logo=dd.logo;
   if(dd.slug)m.slug=dd.slug;
@@ -853,7 +878,7 @@ function centreFromFirestore(dd,base){
   return m;
 }
 function centreSig(c){
-  return JSON.stringify({name:c.name,city:c.city,address:c.address,phone:c.phone,maps:c.maps,desc:c.desc,services:c.services,hours:c.hours,cover:fp(c.cover),photos:(c.photos||[]).map(fp),servicePhotos:c.servicePhotos,social:c.social,logo:fp(c.logo)});
+  return JSON.stringify({name:c.name,city:c.city,address:c.address,phone:c.phone,maps:c.maps,desc:c.desc,services:c.services,hours:c.hours,cover:fp(c.cover),photos:(c.photos||[]).map(fp),servicePhotos:c.servicePhotos,servicePrices:c.servicePrices,serviceDesc:c.serviceDesc,social:c.social,logo:fp(c.logo)});
 }
 var MONTHS_FR=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 function sinceLabel(c){
@@ -867,7 +892,7 @@ function serviceListHTML(c){
   return '<div class="svc-list" id="svcList">'+c.services.map(function(s,i){
     var src=svcPhotos[s]||photos[i]||null;
     var thumb=src?'<img src="'+src+'" alt="Photo — '+esc(s)+'">':'<span class="svc-thumb-ph" aria-hidden="true">📷</span>';
-    return '<button type="button" class="svc-row'+(src?"":" no-photo")+'"'+(src?' data-src="'+src+'"':"")+'>'+thumb+'<span class="svc-name">'+esc(s)+'</span><span class="svc-arrow" aria-hidden="true">›</span></button>';
+    return '<button type="button" class="svc-row'+(src?"":" no-photo")+'" data-idx="'+i+'"'+(src?' data-src="'+src+'"':"")+'>'+thumb+'<span class="svc-name">'+esc(s)+'</span><span class="svc-arrow" aria-hidden="true">›</span></button>';
   }).join("")+'</div>';
 }
 /* Liste des centres en direct : la page « Centres » ne se contente plus
@@ -1017,7 +1042,6 @@ function viewCentre(slug,liveCentre){
     if(!lbList.length)return;
     var cov=document.querySelector(".fiche-cover img");
     if(cov&&c.cover)cov.addEventListener("click",function(){var ix=lbIndexOf(lbList,c.cover);if(ix>-1)lbOpen(lbList,ix);});
-    document.querySelectorAll("#svcList .svc-row[data-src]").forEach(function(row){row.addEventListener("click",function(){var ix=lbIndexOf(lbList,row.getAttribute("data-src"));if(ix>-1)lbOpen(lbList,ix);});});
     document.querySelectorAll(".gallery a").forEach(function(a){
       a.addEventListener("click",function(e){
         e.preventDefault();
@@ -1026,6 +1050,7 @@ function viewCentre(slug,liveCentre){
       });
     });
   })();
+  document.querySelectorAll("#svcList .svc-row").forEach(function(row){row.addEventListener("click",function(){var ix=parseInt(row.getAttribute("data-idx"),10);if(!isNaN(ix))location.hash="#/service/"+c.slug+"/"+ix;});});
   if(!liveCentre){
     (function(){
       var y0=window.scrollY||0;
@@ -1166,6 +1191,89 @@ function viewCentre(slug,liveCentre){
       toast("Envoi échoué — téléchargez votre avis pour le conserver");
     });
   });
+  window.scrollTo(0,0);
+}
+
+/* Page d'un service (clic sur un service dans la fiche d'un centre) :
+   titre, tarif, description, photo, centre et contact — modèle hdaya.ma.
+   Route : #/service/<slug-centre>/<index-du-service>. */
+function viewService(centreSlug,svcIndex,liveCentre){
+  var c=null;
+  if(liveCentre){c=liveCentre;}
+  else{CENTRES.forEach(function(x){if(x.slug===centreSlug)c=x;});}
+  if(!c){viewHome();return;}
+  var svcs=c.services||[];
+  if(isNaN(svcIndex)||svcIndex<0||svcIndex>=svcs.length){viewCentre(centreSlug);return;}
+  var s=svcs[svcIndex];
+  var svcPhotos=c.servicePhotos||{};
+  var photos=c.photos||[];
+  var src=svcPhotos[s]||photos[svcIndex]||null;
+  var prices=c.servicePrices||{};
+  var descs=c.serviceDesc||{};
+  var price=prices[s];
+  var hasPrice=(typeof price==="number"&&isFinite(price)&&price>0);
+  var desc=descs[s]||"";
+  var waNum=(c.phoneIntl||"").replace(/[^0-9]/g,"");
+  var waHref=waNum?"https://wa.me/"+waNum+"?text="+encodeURIComponent("Bonjour, je vous contacte depuis l'Annuaire Hijama au sujet de : "+s):"";
+  document.title=s+" — "+c.name+" — Annuaire Hijama";
+  app.innerHTML='<div class="wrap fiche"><p class="crumb"><a href="#/accueil">Accueil</a> › <a href="#/centres">Centres</a> › <a href="#/centre/'+c.slug+'">'+esc(c.name)+'</a> › '+esc(s)+'</p>'
+  +'<span class="badge gold">Hijama</span>'
+  +'<h1 style="font-size:1.9rem;line-height:1.15;margin:10px 0 4px">'+esc(s)+'</h1>'
+  +'<p class="fiche-sub">Service proposé par <a href="#/centre/'+c.slug+'" style="font-weight:700">'+esc(c.name)+'</a> · 📍 '+esc(c.city)+'</p>'
+  +'<div class="fiche-cols"><div class="fiche-main">'
+  +(hasPrice?'<div class="price-box"><span class="price-label">Tarif</span><span class="price-val">'+price+' DH</span></div>':'<p class="notice" style="margin-top:14px">Les tarifs sont communiqués par le centre lors de la prise de rendez-vous.</p>')
+  +(desc?'<section class="card fiche-sec"><h3>À propos de ce service</h3><p>'+esc(desc)+'</p></section>':"")
+  +(src?'<section class="card fiche-sec"><h3>Photo</h3><div class="gallery"><a href="'+src+'" target="_blank" rel="noopener"><img src="'+src+'" alt="Photo — '+esc(s)+'" loading="lazy"></a></div></section>':"")
+  +'</div><aside class="fiche-side">'
+  +'<div class="card"><h3>'+esc(c.name)+'</h3><p style="margin:4px 0">📍 '+esc(c.city)+'</p><p style="margin:0 0 10px">'+esc(c.address)+'</p><a class="btn" href="#/centre/'+c.slug+'" style="width:100%;justify-content:center">Voir la fiche du centre</a></div>'
+  +'<div class="card"><h3>Contact</h3>'
+  +'<div class="phone-box"><div><span class="ph-label">TÉLÉPHONE</span><span class="ph-num">'+esc(phoneDisplay(c.phoneIntl))+'</span></div><button class="ph-copy" type="button" id="copyPhoneIcon" data-phone="'+esc(c.phoneIntl)+'" aria-label="Copier le numéro" title="Copier le numéro">📋</button></div>'
+  +'<a class="btn" href="tel:'+c.phoneIntl+'" style="width:100%;justify-content:center;margin-top:10px">📞 Appeler le centre</a>'
+  +'<button class="btn ghost" type="button" id="copyPhoneBtn" data-phone="'+esc(c.phoneIntl)+'" style="width:100%;justify-content:center;margin-top:8px">📋 Copier le numéro</button>'
+  +(waHref?'<a class="btn" href="'+waHref+'" target="_blank" rel="noopener" style="width:100%;justify-content:center;margin-top:8px">💬 WhatsApp</a>':"")
+  +'</div></aside></div>'
+  +'<p style="margin-top:18px"><a href="#/centre/'+c.slug+'" style="font-weight:700">← Retour à la fiche de '+esc(c.name)+'</a></p>'
+  +'</div>';
+  function copyFallback(txt,done){
+    try{
+      var ta=document.createElement("textarea");ta.value=txt;ta.setAttribute("readonly","");ta.style.position="absolute";ta.style.left="-9999px";
+      document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);done();
+    }catch(e){}
+  }
+  function bindCopyPhone(btn){
+    if(!btn)return;
+    btn.addEventListener("click",function(){
+      var num=btn.getAttribute("data-phone")||"";
+      if(!num)return;
+      var done=function(){
+        var b2=document.getElementById("copyPhoneBtn");
+        if(b2){var o=b2.innerHTML;b2.innerHTML="✓ Numéro copié";setTimeout(function(){b2.innerHTML=o;},2000);}
+        if(typeof toast==="function")toast("Numéro copié");
+      };
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(num).then(done,function(){copyFallback(num,done);});}
+      else{copyFallback(num,done);}
+    });
+  }
+  bindCopyPhone(document.getElementById("copyPhoneBtn"));
+  bindCopyPhone(document.getElementById("copyPhoneIcon"));
+  if(!liveCentre){
+    (function(){
+      var y0=window.scrollY||0;
+      fbWhenReady(function(){
+        try{
+          firebase.firestore().collection("centres").where("slug","==",centreSlug).limit(1).get().then(function(snap){
+            var dd=null;snap.forEach(function(d){if(!dd)dd=d.data();});
+            if(!dd||dd.directUpdated!==true)return;
+            var live=centreFromFirestore(dd,c);
+            if(centreSig(c)!==centreSig(live)){
+              viewService(centreSlug,svcIndex,live);
+              window.scrollTo(0,y0);
+            }
+          }).catch(function(){});
+        }catch(e){}
+      },function(){});
+    })();
+  }
   window.scrollTo(0,0);
 }
 
@@ -2389,6 +2497,7 @@ function route(){
   if(!seg.length||seg[0]==="accueil")viewHome();
   else if(seg[0]==="centres")viewCentres(params.get("q")||"");
   else if(seg[0]==="centre"&&seg[1])viewCentre(seg[1]);
+  else if(seg[0]==="service"&&seg[1]&&seg[2]!==undefined)viewService(seg[1],parseInt(seg[2],10));
   else if(seg[0]==="villes")viewVilles();
   else if(seg[0]==="ville"&&seg[1])viewVille(seg[1],params.get("q")||"");
   else if(seg[0]==="guides")viewGuides();
