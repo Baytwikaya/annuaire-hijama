@@ -1280,7 +1280,7 @@ function viewService(centreSlug,svcIndex,liveCentre){
   bindCopyPhone(document.getElementById("copyPhoneBtn"));
   bindCopyPhone(document.getElementById("copyPhoneIcon"));
   var svcImg=document.getElementById("svcPhotoImg");
-  if(svcImg&&src&&typeof lbOpen==="function"){svcImg.addEventListener("click",function(){lbOpen([src],0);});}
+  if(svcImg&&src&&typeof lbOpen==="function"){svcImg.addEventListener("click",function(){lbOpen([{src:src,cap:"Photo — "+s}],0);});}
   if(!liveCentre){
     (function(){
       var y0=window.scrollY||0;
