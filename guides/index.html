@@ -791,7 +791,7 @@ function centreCard(c){
   +'<p class="meta">📍 '+esc(cardLoc(c))+'</p>'
   +'<p class="svc-line">'+c.services.slice(0,2).map(function(s){return esc(svcShort(s));}).join(" · ")+(c.services.length>2?" …":"")+'</p>'
   +(mp!==null?'<p class="price-from">À partir de '+mp+' DH</p>':"")
-  +'<div class="actions"><a class="btn small" href="#/centre/'+c.slug+'">Voir la fiche</a><a class="btn small ghost" href="tel:'+c.phoneIntl+'" onclick="event.stopPropagation()">📞 '+c.phone+"</a></div>"
+  +'<div class="actions"><a class="btn small" href="/centre/'+c.slug+'">Voir la fiche</a><a class="btn small ghost" href="tel:'+c.phoneIntl+'" onclick="event.stopPropagation()">📞 '+c.phone+"</a></div>"
   +'</div></article>';
 }
 function trackerBlock(){
