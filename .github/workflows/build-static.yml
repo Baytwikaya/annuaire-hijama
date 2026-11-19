@@ -45,3 +45,6 @@ jobs:
           git add -A
           git diff --cached --quiet || git commit -m "Static build: regenerate pages + sitemap [skip ci]"
           git push
+      - name: Submit new/changed URLs to IndexNow (Bing/Yandex — not Google)
+        continue-on-error: true
+        run: node submit-indexnow.js

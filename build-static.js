@@ -89,6 +89,22 @@ const { execFileSync } = require("child_process");
 const ROOT = __dirname;
 const SITE = "https://hijama.site";
 const TODAY = new Date().toISOString().slice(0, 10);
+const crypto = require("crypto");
+
+/* Sérialisation JSON déterministe (clés triées, récursif) : le même
+   objet produit toujours les mêmes octets. Sans cela, l'ordre des clés
+   d'une carte Firestore (ex. `social`) varie d'un build à l'autre et
+   chaque page « change » à chaque build alors que les données sont
+   identiques — ce qui faussait <lastmod> et faisait committer le
+   workflow tous les jours pour rien. */
+function stableStringify(v) {
+  if (v === null || typeof v !== "object") return JSON.stringify(v);
+  if (Array.isArray(v)) return "[" + v.map(stableStringify).join(",") + "]";
+  return "{" + Object.keys(v).sort().map(function (k) { return JSON.stringify(k) + ":" + stableStringify(v[k]); }).join(",") + "}";
+}
+/* Empreinte courte du contenu d'une page (pour un <lastmod> véridique :
+   on conserve la date d'une URL dont le contenu n'a pas changé). */
+function contentHash(s) { return crypto.createHash("sha256").update(s, "utf8").digest("hex").slice(0, 16); }
 
 /* ------------------------------------------------------------------ */
 /* Utilitaires (mêmes règles que l'application)                        */
@@ -791,7 +807,7 @@ function setHeadMeta(html, title, desc, url) {
 function syncSeed(html, centres) {
   var lit = extractLiteral(html, "var CENTRES", "[", "]");
   var i = html.indexOf(lit);
-  return html.slice(0, i) + JSON.stringify(centres) + html.slice(i + lit.length);
+  return html.slice(0, i) + stableStringify(centres) + html.slice(i + lit.length);
 }
 function setApp(html, body, useMarkers) {
   html = html.replace(/<!-- PRERENDER:home -->[\s\S]*?<!-- \/PRERENDER -->/, "");
@@ -843,6 +859,17 @@ function sitemapMeta(route) {
 /* ------------------------------------------------------------------ */
 async function main() {
   console.log("== build-static.js — " + TODAY + " ==");
+
+  // Manifeste précédent (pour un <lastmod> véridique : on conserve la
+  // date d'une URL dont le contenu n'a pas changé ; TODAY seulement
+  // pour les URL nouvelles ou modifiées).
+  var oldByLoc = {};
+  var oldManifestPath = path.join(ROOT, "static-manifest.json");
+  if (fs.existsSync(oldManifestPath)) {
+    try {
+      JSON.parse(fs.readFileSync(oldManifestPath, "utf8")).urls.forEach(function (u) { oldByLoc[u.loc] = u; });
+    } catch (e) { console.warn("  [avertissement] manifeste précédent illisible, lastmod réinitialisé : " + e.message); }
+  }
   const tpl = loadTemplateData();
   console.log("Gabarit lu : régions=" + Object.keys(tpl.REGIONS).length, "guides=" + tpl.GUIDES.length, "centres (seed)=" + tpl.CENTRES.length);
 
@@ -917,6 +944,7 @@ async function main() {
 
   // Rendu de chaque route.
   var manifestUrls = [];
+  var changedUrls = []; // URL nouvelles ou modifiées ce build (pour IndexNow)
   for (var ri = 0; ri < routes.length; ri++) {
     var route = routes[ri];
     var seg = route.split("/").filter(Boolean);
@@ -945,7 +973,12 @@ async function main() {
     if (check.indexOf("<title>" + esc(meta.title) + "</title>") < 0) throw new Error("Page sans titre : " + out);
     if (check.indexOf('id="app"') < 0 || check.indexOf("<!-- PRERENDER:home -->") < 0 && route === "") throw new Error("Page sans contenu pré-rendu : " + out);
     var sm = sitemapMeta(route);
-    manifestUrls.push({ loc: url, lastmod: TODAY, changefreq: sm.changefreq, priority: sm.priority });
+    var hash = contentHash(html);
+    var prev = oldByLoc[url];
+    var isChanged = !(prev && prev.hash === hash && prev.lastmod);
+    var lastmod = isChanged ? TODAY : prev.lastmod;
+    if (isChanged) changedUrls.push(url);
+    manifestUrls.push({ loc: url, lastmod: lastmod, hash: hash, changefreq: sm.changefreq, priority: sm.priority });
     console.log("  " + url);
   }
 
@@ -975,6 +1008,12 @@ async function main() {
   // Manifeste + sitemap.
   fs.writeFileSync(path.join(ROOT, "static-manifest.json"), JSON.stringify({ generatedAt: TODAY, urls: manifestUrls }, null, 2) + "\n", "utf8");
   execFileSync("node", ["gen_sitemap.js"], { cwd: ROOT, stdio: "inherit" });
+
+  // URLs nouvelles ou modifiées ce build → soumission IndexNow
+  // (Bing/Yandex/…, pas Google) par le workflow, après le push.
+  var changed = changedUrls.slice();
+  fs.writeFileSync(path.join(ROOT, "indexnow-changed.json"), JSON.stringify({ generatedAt: TODAY, urls: changed }, null, 2) + "\n", "utf8");
+  console.log("IndexNow : " + changed.length + " URL(s) nouvelle(s)/modifiée(s) → indexnow-changed.json");
 
   console.log("== OK : " + routes.length + " pages statiques, " + merged.length + " centre(s), " + Object.keys(citySlugsWithCentres).length + " ville(s) avec centre. ==");
   console.log("Manifeste : static-manifest.json — Sitemap : sitemap.xml (" + manifestUrls.length + " URL).");
