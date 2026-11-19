@@ -1,105 +1,105 @@
 {
-  "generatedAt": "2026-11-18",
+  "generatedAt": "2026-11-19",
   "urls": [
     {
       "loc": "https://hijama.site/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "daily",
       "priority": 1
     },
     {
       "loc": "https://hijama.site/centres/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "weekly",
       "priority": 0.8
     },
     {
       "loc": "https://hijama.site/villes/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "weekly",
       "priority": 0.8
     },
     {
       "loc": "https://hijama.site/guides/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "weekly",
       "priority": 0.8
     },
     {
       "loc": "https://hijama.site/inscription/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "monthly",
       "priority": 0.5
     },
     {
       "loc": "https://hijama.site/verification/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "monthly",
       "priority": 0.5
     },
     {
       "loc": "https://hijama.site/guide/choisir-centre-hijama/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/guide/hygiene-securite-hijama/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/guide/premiere-seance-hijama/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/guide/questions-frequentes-hijama/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/centre/bayt-al-wiqaya-casablanca/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "weekly",
       "priority": 0.9
     },
     {
       "loc": "https://hijama.site/service/bayt-al-wiqaya-casablanca/0/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/service/bayt-al-wiqaya-casablanca/1/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/service/bayt-al-wiqaya-casablanca/2/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/service/bayt-al-wiqaya-casablanca/3/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/service/bayt-al-wiqaya-casablanca/4/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/ville/casablanca/",
-      "lastmod": "2026-11-18",
+      "lastmod": "2026-11-19",
       "changefreq": "monthly",
       "priority": 0.7
     }
