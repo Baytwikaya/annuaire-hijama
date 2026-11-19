@@ -6,11 +6,9 @@
    -----------------
    hijama.site est une application monopage (SPA) : une seule page
    index.html, dont les « pages » (villes, centres, guides…) sont des
-   vues JavaScript derrière des ancres (#/ville/casablanca). Google
-   ignore le contenu après # : seule la page d'accueil pouvait être
-   indexée. Ce script génère une vraie page HTML par route, avec le
-   contenu complet + titre / méta / canonique dans le HTML brut, pour
-   que Google indexe chaque page sans exécuter de JavaScript.
+   vues JavaScript derrière des URL propres (/ville/casablanca).
+   Sans ce script, seule la page d'accueil existerait en HTML réel :
+   les vues servies par l'application seule ne sont pas indexables.
 
    CE QUE LE SCRIPT GÉNÈRE
    ------------------------
@@ -74,6 +72,11 @@
    - <route>/index.html pour chaque route générée
    - index.html (accueil pré-rendu, entre les marqueurs
      <!-- PRERENDER:home --> ... <!-- /PRERENDER -->)
+   - 404.html : copie de l'application (GitHub Pages le sert pour les
+     URL propres sans page statique : nouveau centre avant le prochain
+     build, /ville/<sans centre>, /espace, /admin…)
+   - centre/<ancien-slug>/index.html (+ pages services) : redirections
+     vers la nouvelle fiche quand un centre est renommé
    - static-manifest.json : la liste des URL générées
    - sitemap.xml : régénéré par gen_sitemap.js à partir du manifeste
    ===================================================================== */
@@ -273,6 +276,7 @@ function centreFromFirestore(dd, base) {
   if (dd.social) m.social = dd.social;
   if (dd.logo && isImgSrc(dd.logo)) m.logo = dd.logo;
   if (dd.slug) m.slug = dd.slug;
+  if (dd.oldSlugs && Array.isArray(dd.oldSlugs)) m.oldSlugs = dd.oldSlugs.filter(function (x) { return typeof x === "string" && x && x !== m.slug; });
   if (typeof dd.since === "string" && dd.since) m.since = dd.since;
   if (dd.verified !== undefined) m.verified = dd.verified;
   return m;
@@ -297,15 +301,22 @@ function pruneServiceMaps(c) {
   return c;
 }
 function mergeCentres(seed, fsCentres, etat, CITIES) {
-  var bySlug = {};
-  seed.forEach(function (c) { bySlug[c.slug] = c; });
   var merged = seed.map(function (c) { return Object.assign({}, c); });
   var mergedBySlug = {};
   merged.forEach(function (c) { mergedBySlug[c.slug] = c; });
   fsCentres.forEach(function (dd) {
     if (dd.directUpdated !== true) return;
-    var slug = dd.slug || (bySlug[dd.slug] ? dd.slug : null);
-    if (!slug) {
+    /* Rattachement au centre de référence : par le slug actuel, ou par
+       un ancien slug (centre renommé : le document porte le nouveau
+       slug + oldSlugs). Sans rattachement et sans slug, c'est un
+       nouveau centre ; avec un slug inconnu, on ignore le document. */
+    var base2 = null;
+    if (dd.slug) base2 = mergedBySlug[dd.slug] || null;
+    if (!base2 && dd.oldSlugs && Array.isArray(dd.oldSlugs)) {
+      for (var i = 0; i < dd.oldSlugs.length && !base2; i++) base2 = mergedBySlug[dd.oldSlugs[i]] || null;
+    }
+    if (!base2) {
+      if (dd.slug) return;
       // Nouveau centre sans entrée codée en dur : base minimale, puis fusion.
       var base = {
         slug: dd.slug || citySlug(dd.name || "centre"),
@@ -318,10 +329,15 @@ function mergeCentres(seed, fsCentres, etat, CITIES) {
       mergedBySlug[merged[merged.length - 1].slug] = merged[merged.length - 1];
       return;
     }
-    var base2 = mergedBySlug[slug];
-    if (!base2) return;
+    var prevSlug = base2.slug;
     var live = centreFromFirestore(dd, base2);
     Object.keys(live).forEach(function (k) { base2[k] = live[k]; });
+    /* Renommage : le slug a changé — réindexer (l'ancienne clé est
+       supprimée ; l'état fiches_etat suit via oldSlugs, voir ci-dessous). */
+    if (base2.slug !== prevSlug) {
+      delete mergedBySlug[prevSlug];
+      mergedBySlug[base2.slug] = base2;
+    }
   });
   // Région du centre : recalculée depuis sa ville (comme l'application).
   merged.forEach(function (c) {
@@ -329,12 +345,25 @@ function mergeCentres(seed, fsCentres, etat, CITIES) {
     CITIES.forEach(function (x) { if (x.name === c.city) found = x; });
     if (found) c.region = found.region;
   });
-  // Surcharge d'état (vérifié / suspendu) depuis fiches_etat.
+  // Surcharge d'état (vérifié / suspendu) depuis fiches_etat — par le
+  // slug actuel, ou par un ancien slug (centre renommé).
   (etat || []).forEach(function (e) {
-    var c = mergedBySlug[e.slug || e.centreSlug];
+    var key = e.slug || e.centreSlug;
+    var c = mergedBySlug[key];
+    if (!c) merged.forEach(function (x) { if ((x.oldSlugs || []).indexOf(key) > -1) c = x; });
     if (!c) return;
     if (e.verified !== undefined) c.verified = e.verified;
     if (e.suspended !== undefined) c.suspended = e.suspended;
+  });
+  // Deux centres ne doivent jamais partager un slug (sinon leurs pages
+  // s'écrasent) : en cas de doublon, le second est suffixé (-2, -3…).
+  var seenSlugs = {};
+  merged.forEach(function (c) {
+    if (!seenSlugs[c.slug]) { seenSlugs[c.slug] = c; return; }
+    var base = c.slug, i = 2;
+    while (seenSlugs[c.slug]) c.slug = base + "-" + (i++);
+    seenSlugs[c.slug] = c;
+    console.warn("  [avertissement] slug en double, renommé : " + base + " → " + c.slug);
   });
   merged.forEach(pruneServiceMaps);
   return merged;
@@ -348,16 +377,17 @@ function validateCentres(centres) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Liens : URL propre si la route est générée, ancre sinon             */
+/* Liens : toujours en URL propre — le routeur de l'application       */
+/* (History API) et la page 404.html servent toutes les routes, y     */
+/* compris celles sans page statique (/ville/<sans centre>, /espace,  */
+/* /admin). Il n'y a plus d'ancre #/… nulle part.                     */
 /* ------------------------------------------------------------------ */
-let GENERATED = new Set();
 function link(route) {
   var q = "";
   var qi = route.indexOf("?");
   if (qi >= 0) { q = route.slice(qi); route = route.slice(0, qi); }
   if (route === "" || route === "accueil") return "/" + (q ? q : "");
-  if (GENERATED.has(route)) return "/" + route + "/" + (q ? q : "");
-  return "#/" + route + q;
+  return "/" + route + "/" + (q ? q : "");
 }
 
 /* ------------------------------------------------------------------ */
@@ -406,7 +436,7 @@ function trackerBlock() {
     + '<p class="tracker-note"><b>Deux outils, un même objectif :</b> être trouvé par les clients, puis travailler comme un professionnel organisé.</p>'
     + '<div class="tracker-actions"><a class="btn" href="https://baytwikaya.site/fr/centers" target="_blank" rel="noopener">Découvrir l\'offre pour les centres</a></div>'
     + '<div class="tracker-links"><a href="' + link("inscription") + '">Ou inscrivez d\'abord votre centre dans l\'annuaire →</a>'
-    + '<a href="#/espace">Déjà publié ? Gérez votre fiche dans votre Espace centre →</a></div></div>'
+    + '<a href="' + link("espace") + '">Déjà publié ? Gérez votre fiche dans votre Espace centre →</a></div></div>'
     + '<figure class="tracker-media"><img src="/tracker.jpg" alt="L\'assistant intelligent du Hijama Tracker, un petit robot, désigne le panneau de la carte des points de hijama sur le corps humain" width="800" height="600"><figcaption>L\'assistant intelligent vous montre la carte des points de hijama</figcaption></figure>'
     + '</div></section>';
 }
@@ -499,9 +529,9 @@ function majorCityOptions(preselect, CITIES, REGIONS, MAJOR_CITIES) {
 
 /* ------------------------------------------------------------------ */
 /* Vues pré-rendues (ports fidèles de l'application ; les liens       */
-/* internes utilisent link() : URL propre si la page est générée,    */
-/* ancre #/… sinon). Les formulaires sont inertes avant le démarrage */
-/* de l'application, qui les re-rend et y attache ses gestionnaires.  */
+/* internes utilisent link() : URL propre partout. Les formulaires    */
+/* sont inertes avant le démarrage de l'application, qui les re-rend */
+/* et y attache ses gestionnaires.                                    */
 /* ------------------------------------------------------------------ */
 function sortCentres(list) {
   return list.slice().sort(function (a, b) { var av = !!a.verified, bv = !!b.verified; if (av !== bv) return av ? -1 : 1; var af = !!a.featured, bf = !!b.featured; if (af !== bf) return af ? -1 : 1; return 0; });
@@ -641,7 +671,7 @@ function viewCentre(c, ctx) {
     + '<a class="pill-link" href="' + esc(c.maps) + '" target="_blank" rel="noopener">Itinéraire →</a></div>'
     + (function () { var sh = socialHTML(c); return sh ? '<div class="card"><h3>Réseaux sociaux</h3>' + sh + "</div>" : ""; })()
     + (c.verified ? '<div class="card"><h3>Fiche vérifiée</h3><p><span class="badge gold">Hygiène contrôlée</span></p><p style="margin-top:10px">Cette fiche a été créée par l\'équipe de l\'annuaire après contact avec le centre, réception de photos de ses locaux et contrôle des critères d\'hygiène.</p><a href="' + link("verification") + '" style="font-weight:700">Notre processus de vérification →</a></div>' : "")
-    + '<div class="own-space"><span aria-hidden="true" style="font-size:1.3rem;line-height:1">🔑</span><p style="margin:0"><b>C\'est votre centre ?</b> Ce centre a son propre Espace centre, réservé à son responsable : il y modifie cette fiche — informations, horaires, visuels — et y ajoute ses autres services s\'il en propose. Chaque modification est publiée immédiatement sur sa fiche publique.<br><a href="#/espace" style="font-weight:700">Ouvrir mon Espace centre →</a></p></div>'
+    + '<div class="own-space"><span aria-hidden="true" style="font-size:1.3rem;line-height:1">🔑</span><p style="margin:0"><b>C\'est votre centre ?</b> Ce centre a son propre Espace centre, réservé à son responsable : il y modifie cette fiche — informations, horaires, visuels — et y ajoute ses autres services s\'il en propose. Chaque modification est publiée immédiatement sur sa fiche publique.<br><a href="' + link("espace") + '" style="font-weight:700">Ouvrir mon Espace centre →</a></p></div>'
     + adSlot(true)
     + "</aside></div>"
     + similarHTML
@@ -771,6 +801,23 @@ function setApp(html, body, useMarkers) {
 }
 function pageUrl(route) { return route === "" ? SITE + "/" : SITE + "/" + route + "/"; }
 function outPath(route) { return route === "" ? path.join(ROOT, "index.html") : path.join(ROOT, route, "index.html"); }
+/* Page de redirection (ancien slug d'un centre renommé) : méta refresh
+   + canonique vers la nouvelle fiche + noindex (la page ne doit pas
+   être indexée, c'est la nouvelle fiche qui compte). */
+function writeRedirect(route, target) {
+  var url = SITE + target;
+  var html = "<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"utf-8\">"
+    + "<title>Redirection — Annuaire Hijama</title>"
+    + "<link rel=\"canonical\" href=\"" + esc(url) + "\">"
+    + "<meta http-equiv=\"refresh\" content=\"0; url=" + esc(url) + "\">"
+    + "<meta name=\"robots\" content=\"noindex\">"
+    + "<script>location.replace(" + JSON.stringify(url) + ");</script>"
+    + "</head><body><p>Cette fiche a déménagé : <a href=\"" + esc(url) + "\">" + esc(url) + "</a></p></body></html>\n";
+  var out = path.join(ROOT, route, "index.html");
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, html, "utf8");
+  console.log("  [redirection] " + SITE + "/" + route + "/ -> " + url);
+}
 
 const SITEMAP_META = [
   [/^$/, 1.0, "daily"],
@@ -857,7 +904,6 @@ async function main() {
     citySlugsWithCentres[citySlug(c.city)] = 1;
   });
   Object.keys(citySlugsWithCentres).forEach(function (s) { routes.push("ville/" + s); });
-  GENERATED = new Set(routes);
   console.log("Routes à générer : " + routes.length + " (dont " + Object.keys(citySlugsWithCentres).length + " ville(s) avec centre).");
 
   // Nettoyage des sorties générées (une page de centre supprimé disparaît).
@@ -902,6 +948,29 @@ async function main() {
     manifestUrls.push({ loc: url, lastmod: TODAY, changefreq: sm.changefreq, priority: sm.priority });
     console.log("  " + url);
   }
+
+  // Redirections des anciens slugs (centres renommés) : la page de
+  // l'ancien slug redirige vers la nouvelle fiche (et chaque ancienne
+  // page service vers sa nouvelle page). Jamais dans le sitemap.
+  merged.forEach(function (c) {
+    (c.oldSlugs || []).forEach(function (old) {
+      if (!old || old === c.slug) return;
+      writeRedirect("centre/" + old, "/centre/" + c.slug + "/");
+      (c.services || []).forEach(function (s, i) {
+        writeRedirect("service/" + old + "/" + i, "/service/" + c.slug + "/" + i + "/");
+      });
+    });
+  });
+
+  // 404.html : copie de l'application (même contenu que l'accueil) —
+  // GitHub Pages le sert pour les URL propres sans page statique
+  // (nouveau centre avant le prochain build, /ville/<sans centre>,
+  // /espace, /admin…) : le routeur lit le chemin et affiche la bonne
+  // vue. Noindex : une URL en 404 ne doit pas être indexée.
+  var app404 = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  app404 = app404.replace("</head>", '<meta name="robots" content="noindex">\n</head>');
+  fs.writeFileSync(path.join(ROOT, "404.html"), app404, "utf8");
+  console.log("  404.html (copie de l'application, noindex)");
 
   // Manifeste + sitemap.
   fs.writeFileSync(path.join(ROOT, "static-manifest.json"), JSON.stringify({ generatedAt: TODAY, urls: manifestUrls }, null, 2) + "\n", "utf8");

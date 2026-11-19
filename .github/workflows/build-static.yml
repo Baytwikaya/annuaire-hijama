@@ -2,8 +2,8 @@
 #
 # hijama.site est une application monopage (SPA) : une seule page
 # index.html, dont les « pages » sont des vues JavaScript derrière des
-# ancres (#/ville/casablanca). Google ignore le contenu après # : sans
-# ce workflow, seule la page d'accueil pouvait être indexée.
+# URL propres (/ville/casablanca). Les pages statiques permettent à
+# Google d'indexer chaque page sans exécuter de JavaScript.
 #
 # build-static.js génère une vraie page HTML par route (contenu complet
 # + titre / méta / canonique dans le HTML brut) à partir des données

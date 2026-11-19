@@ -7,8 +7,10 @@ Site statique (GitHub Pages) : une application monopage (`index.html`)
 
 ## Pages statiques (pré-rendu)
 
-Le site est une SPA à ancres (`#/ville/casablanca`) : Google ignore le
-contenu après `#`, donc seule la page d'accueil pouvait être indexée.
+Le site est une SPA à URL propres (`/ville/casablanca`) : le routeur
+(History API) affiche chaque vue sans recharger la page, et `404.html`
+sert l'application pour les URL sans page statique (`/espace`, `/admin`,
+ville sans centre, nouveau centre avant le prochain build).
 `build-static.js` génère une vraie page HTML par route, avec le contenu
 complet + titre / méta / canonique dans le HTML brut :
 
