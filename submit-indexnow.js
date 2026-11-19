@@ -33,7 +33,7 @@ function main() {
   const urls = changed.urls || [];
   if (!urls.length) { console.log("IndexNow : aucune URL nouvelle/modifiée — rien à soumettre."); return; }
   const body = JSON.stringify({ host: HOST, key: key, keyLocation: "https://" + HOST + "/" + KEY_FILE, urlList: urls });
-  const req = https.request({ hostname: "api.indexnow.org", path: "/indexnow.json", method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } }, function (res) {
+  const req = https.request({ hostname: "api.indexnow.org", path: "/indexnow", method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } }, function (res) {
     console.log("IndexNow : HTTP " + res.statusCode + " pour " + urls.length + " URL(s).");
     if (res.statusCode === 200 || res.statusCode === 202) { console.log("IndexNow : soumission acceptée."); }
     else { console.warn("IndexNow : réponse inattendue (" + res.statusCode + ") — URL non soumises (elles restent dans le sitemap)."); }
