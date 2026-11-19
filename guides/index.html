@@ -1,6 +1,21 @@
 <!doctype html>
 <html lang="fr">
 <head>
+<!-- Google Analytics 4 — hijama.site (property 565236077) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XG2FFE1DEG"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-XG2FFE1DEG');
+/* SPA : envoyer une page_view à chaque navigation interne (History API) */
+(function(){
+  function track(){ if (typeof gtag === 'function') gtag('event', 'page_view', { page_path: location.pathname + location.search }); }
+  var _ps = history.pushState;
+  history.pushState = function(){ var r = _ps.apply(this, arguments); track(); return r; };
+  window.addEventListener('popstate', track);
+})();
+</script>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="light dark" />
