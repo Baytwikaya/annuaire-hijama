@@ -143,6 +143,81 @@ function isImgSrc(v) {
 function fp(v) { v = String(v || ""); return v.length + ":" + v.slice(0, 100); }
 
 const MONTHS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+/* ---------- Pages arabes (/ar) : les 20 grandes villes ---------- */
+var AR_CITIES=[
+ {slug:"casablanca",ar:"الدار البيضاء",fr:"Casablanca"},
+ {slug:"rabat",ar:"الرباط",fr:"Rabat"},
+ {slug:"sale",ar:"سلا",fr:"Salé"},
+ {slug:"marrakech",ar:"مراكش",fr:"Marrakech"},
+ {slug:"fes",ar:"فاس",fr:"Fès"},
+ {slug:"tanger",ar:"طنجة",fr:"Tanger"},
+ {slug:"agadir",ar:"أكادير",fr:"Agadir"},
+ {slug:"meknes",ar:"مكناس",fr:"Meknès"},
+ {slug:"oujda",ar:"وجدة",fr:"Oujda"},
+ {slug:"kenitra",ar:"القنيطرة",fr:"Kénitra"},
+ {slug:"tetouan",ar:"تطوان",fr:"Tétouan"},
+ {slug:"el-jadida",ar:"الجديدة",fr:"El Jadida"},
+ {slug:"nador",ar:"الناظور",fr:"Nador"},
+ {slug:"beni-mellal",ar:"بني ملال",fr:"Béni Mellal"},
+ {slug:"mohammedia",ar:"المحمدية",fr:"Mohammedia"},
+ {slug:"khouribga",ar:"خريبكة",fr:"Khouribga"},
+ {slug:"safi",ar:"آسفي",fr:"Safi"},
+ {slug:"settat",ar:"سطات",fr:"Settat"},
+ {slug:"taza",ar:"تازة",fr:"Taza"},
+ {slug:"khemisset",ar:"الخميسات",fr:"Khémisset"}
+];
+var AR_REGIONS={
+ "Casablanca-Settat":"الدار البيضاء - سطات",
+ "Rabat-Salé-Kénitra":"الرباط - سلا - القنيطرة",
+ "Marrakech-Safi":"مراكش - آسفي",
+ "Fès-Meknès":"فاس - مكناس",
+ "Tanger-Tétouan-Al Hoceïma":"طنجة - تطوان - الحسيمة",
+ "Souss-Massa":"سوس - ماسة",
+ "Oriental":"الشرق",
+ "Béni Mellal-Khénifra":"بني ملال - خنيفرة",
+ "Drâa-Tafilalet":"درعة - تافيلالت",
+ "Guelmim-Oued Noun":"كلميم - واد نون",
+ "Laâyoune-Sakia El Hamra":"العيون - الساقية الحمراء",
+ "Dakhla-Oued Ed-Dahab":"الداخلة - وادي الذهب"
+};
+var AR_SERVICES={
+ "Hijama humide (sanguine)":"الحجامة الدموية",
+ "Hijama sèche":"الحجامة الجافة",
+ "Acupuncture (aiguilles chinoises)":"الوخز بالإبر الصينية",
+ "Massage sportif aux outils de grattage (IASTM)":"التدليك الرياضي بأدوات الكشط",
+ "Formule hijama complète":"باقة الحجامة الشاملة"
+};
+function arService(s){ return AR_SERVICES[s]||s; }
+function arCityBySlug(s){ var r=null; AR_CITIES.forEach(function(x){ if(x.slug===s) r=x; }); return r; }
+/* Description méta d'une page ville arabe : honnête selon qu'un centre
+   vérifié existe déjà ou non dans la ville. */
+function arMetaDesc(ac, hasCentre){
+  if(hasCentre) return "الحجامة في "+ac.ar+": مراكز حجامة موثوقة في "+ac.ar+" — تم التحقق منها، نظافة مراقبة. اعثر على مركز قريب منك في دليل الحجامة في "+ac.ar+".";
+  return "دليل الحجامة في "+ac.ar+": الحجامة في "+ac.ar+" — لا يوجد مركز موثوق بعد في هذه المدينة. سجّل مركزك ليكون الأول هنا بعد التحقق من النظافة.";
+}
+/* Présentations originales (2 à 3 phrases) par ville, en arabe. */
+var AR_INTROS={
+ "casablanca":"الحجامة في الدار البيضاء مطلوبة بكثرة، فهي أكبر مدن المغرب وأكثرها سكانا، ويبحث فيها الآلاف عن مركز موثوق قريب منهم. دليل الحجامة في الدار البيضاء يجمع المراكز التي تم التحقق منها واحدا واحدا، بعد التواصل معها والتأكد من نظافتها. ابدأ بالمركز الموثوق أدناه، واحجز بثقة.",
+ "rabat":"الحجامة في الرباط، عاصمة المملكة، يبحث عنها سكان المدينة وزوارها على حد سواء. دليل الحجامة في الرباط يضم فقط المراكز التي اجتازت التحقق من النظافة، حتى لا تضطر للاختيار في الظلام. إن كنت تدير مركزا في الرباط، سجّله ليظهر هنا بعد التحقق.",
+ "sale":"الحجامة في سلا، المدينة التوأم للرباط، لها جمهورها الخاص من الباحثين عن مركز قريب وموثوق. دليل الحجامة في سلا ما زال ينتظر أول مركز موثوق فيه، وسيظهر هنا فور اجتيازه التحقق. تدير مركزا في سلا؟ سجّله وكن الأول في هذه الصفحة.",
+ "marrakech":"الحجامة في مراكش، المدينة الحمراء التي يقصدها المغاربة والسياح، ممارسة قديمة يعرفها أهلها جيدا. دليل الحجامة في مراكش سيعرض المراكز الموثوقة فور التحقق منها، لتجد مركزا قريبا دون مجازفة. إن كان لديك مركز في مراكش، سجّله ليظهر هنا.",
+ "fes":"الحجامة في فاس، المدينة العريقة، جزء من التراث الصحي الذي توارثه أهلها جيلا بعد جيل. دليل الحجامة في فاس ينتظر أول مركز موثوق، وسيظهر هنا بعد التحقق من نظافته ومصداقيته. تدير مركزا في فاس؟ سجّله وكن الأول.",
+ "tanger":"الحجامة في طنجة، بوابة المغرب على البحر، يبحث عنها سكان المدينة والمدن المجاورة. دليل الحجامة في طنجة يضم فقط المراكز التي تم التحقق منها، حتى تحجز وأنت مطمئن. إن كنت تدير مركزا في طنجة، سجّله ليظهر هنا بعد التحقق.",
+ "agadir":"الحجامة في أكادير، عاصمة سوس، مطلوبة من سكان المدينة والمناطق المحيطة بها. دليل الحجامة في أكادير ما زال بلا مركز موثوق، وسيظهر أول مركز هنا فور اجتيازه التحقق. تدير مركزا في أكادير؟ سجّله وكن الأول في هذه الصفحة.",
+ "meknes":"الحجامة في مكناس، المدينة الإسماعيلية العريقة، يعرفها أهلها منذ القدم ويبحثون عن مركز موثوق قريب. دليل الحجامة في مكناس ينتظر أول مركز يجتاز التحقق، ليظهر هنا بمعلوماته الكاملة. إن كان لديك مركز في مكناس، سجّله الآن.",
+ "oujda":"الحجامة في وجدة، عاصمة الشرق، يبحث عنها سكان المدينة والجهة الشرقية كلها. دليل الحجامة في وجدة يضم فقط المراكز الموثوقة بعد التحقق، حتى تختار بثقة. تدير مركزا في وجدة؟ سجّله ليظهر هنا بعد التحقق من النظافة.",
+ "kenitra":"الحجامة في القنيطرة، مدينة الغرب النشيطة، مطلوبة من سكانها وسكان المدن المجاورة. دليل الحجامة في القنيطرة ما زال ينتظر أول مركز موثوق، وسيظهر هنا فور التحقق منه. إن كنت تدير مركزا في القنيطرة، سجّله وكن الأول.",
+ "tetouan":"الحجامة في تطوان، المدينة البيضاء في الشمال، يعرفها أهلها ويبحثون عن مركز قريب وموثوق. دليل الحجامة في تطوان ينتظر أول مركز يجتاز التحقق، ليظهر هنا بمعلوماته. تدير مركزا في تطوان؟ سجّله ليظهر هنا بعد التحقق.",
+ "el-jadida":"الحجامة في الجديدة، المدينة الساحلية الهادئة، يبحث عنها سكانها وزوارها. دليل الحجامة في الجديدة ما زال بلا مركز موثوق، وسيظهر أول مركز هنا بعد التحقق من نظافته. إن كان لديك مركز في الجديدة، سجّله وكن الأول.",
+ "nador":"الحجامة في الناظور، مدينة الريف الشرقي، مطلوبة من سكان المدينة والمناطق المحيطة. دليل الحجامة في الناظور يضم فقط المراكز التي اجتازت التحقق، حتى تحجز بثقة. تدير مركزا في الناظور؟ سجّله ليظهر هنا بعد التحقق.",
+ "beni-mellal":"الحجامة في بني ملال، قلب الأطلس المتوسط، يعرفها أهل المنطقة ويبحثون عن مركز موثوق. دليل الحجامة في بني ملال ينتظر أول مركز يجتاز التحقق، ليظهر هنا بمعلوماته الكاملة. إن كان لديك مركز في بني ملال، سجّله الآن.",
+ "mohammedia":"الحجامة في المحمدية، مدينة الزهور القريبة من الدار البيضاء، يبحث عنها سكانها دون الحاجة للتنقل بعيدا. دليل الحجامة في المحمدية ما زال ينتظر أول مركز موثوق، وسيظهر هنا فور التحقق منه. تدير مركزا في المحمدية؟ سجّله وكن الأول.",
+ "khouribga":"الحجامة في خريبكة، عاصمة الفوسفاط، مطلوبة من سكان المدينة والعمال والمناطق المجاورة. دليل الحجامة في خريبكة يضم فقط المراكز الموثوقة بعد التحقق، حتى تختار بثقة. إن كنت تدير مركزا في خريبكة، سجّله ليظهر هنا بعد التحقق.",
+ "safi":"الحجامة في آسفي، مدينة البحر والفخار، يعرفها أهلها ويبحثون عن مركز قريب وموثوق. دليل الحجامة في آسفي ما زال بلا مركز موثوق، وسيظهر أول مركز هنا بعد التحقق من نظافته. تدير مركزا في آسفي؟ سجّله وكن الأول.",
+ "settat":"الحجامة في سطات، مدينة الشاوية، مطلوبة من سكانها وسكان القرى والمدن المجاورة. دليل الحجامة في سطات ينتظر أول مركز يجتاز التحقق، ليظهر هنا بمعلوماته. إن كان لديك مركز في سطات، سجّله ليظهر هنا بعد التحقق.",
+ "taza":"الحجامة في تازة، المدينة الجبلية بين فاس ووجدة، يعرفها أهلها ويبحثون عن مركز موثوق. دليل الحجامة في تازة ما زال بلا مركز موثوق، وسيظهر أول مركز هنا بعد التحقق من نظافته. تدير مركزا في تازة؟ سجّله وكن الأول.",
+ "khemisset":"الحجامة في الخميسات، مدينة زمور، مطلوبة من سكان المدينة والمناطق المحيطة. دليل الحجامة في الخميسات يضم فقط المراكز الموثوقة بعد التحقق، حتى تحجز بثقة. إن كنت تدير مركزا في الخميسات، سجّله ليظهر هنا بعد التحقق."
+};
 function sinceLabel(c) {
   var s = c.since || "";
   var m = /^(\d{4})-(\d{2})/.exec(s);
@@ -414,6 +489,15 @@ const HOME_DESC = "Annuaire des centres de hijama (حجامة, cupping) vérifi�
 function metaFor(route, ctx) {
   var seg = route.split("/").filter(Boolean);
   if (!seg.length || seg[0] === "accueil") return { title: HOME_TITLE, desc: HOME_DESC };
+  if (seg[0] === "ar" && seg[1] === "ville" && seg[2]) {
+    var ac = arCityBySlug(seg[2]);
+    if (ac) {
+      var n = 0; Object.keys(ctx.centres).forEach(function (k) { var cc = ctx.centres[k]; if (!cc.suspended && citySlug(cc.city) === seg[2]) n++; });
+      return { title: "دليل الحجامة في " + ac.ar + " — الحجامة في " + ac.ar + " | Annuaire Hijama", desc: arMetaDesc(ac, n > 0) };
+    }
+    return { title: HOME_TITLE, desc: HOME_DESC };
+  }
+  if (seg[0] === "ar") return { title: "دليل الحجامة في المغرب — الحجامة في جميع المناطق | Annuaire Hijama", desc: "دليل الحجامة في المغرب: اعثر على مركز حجامة موثوق في جميع المناطق — الدار البيضاء، الرباط، مراكش، فاس، طنجة، أكادير… مراكز تم التحقق منها، نظافة مراقبة، وآراء موثوقة." };
   if (seg[0] === "centres") return { title: "Tous les centres de hijama vérifiés au Maroc — Annuaire Hijama", desc: "Liste des centres de hijama vérifiés au Maroc : hygiène contrôlée, avis vérifiés, coordonnées et tarifs." };
   if (seg[0] === "villes") return { title: "Hijama par ville — 375 villes du Maroc — Annuaire Hijama", desc: "Trouvez un centre de hijama vérifié dans votre ville, parmi 375 villes du Maroc." };
   if (seg[0] === "ville" && seg[1] && ctx.cities[seg[1]])
@@ -565,6 +649,7 @@ function viewHome(ctx) {
     + '<div><label for="hs-q">Service ou nom du centre</label><input id="hs-q" type="search" placeholder="Ex. hijama humide, acupuncture, alignement…"></div>'
     + '<div style="align-self:end"><button class="btn" type="submit" style="width:100%">Rechercher</button></div></form>'
     + '<div class="stats"><div><b>375</b><span>villes et centres urbains couverts</span></div><div><b>12</b><span>régions du Royaume</span></div><div><b>100 %</b><span>des fiches vérifiées à la main</span></div><div><b>0</b><span>publication sans contrôle d\'hygiène</span></div></div>'
+    + '<p style="margin-top:12px"><a href="/ar/" lang="ar">العربية — دليل الحجامة في المغرب →</a></p>'
     + "</div></div>"
     + '<div class="wrap">' + adSlot(false)
     + '<section class="block"><div class="sec-head"><h2>Centres vérifiés</h2><a href="' + link("centres") + '">Tous les centres →</a></div>'
@@ -606,9 +691,10 @@ function viewVilles(ctx) {
 function viewVille(city, ctx) {
   var CENTRES = ctx.CENTRES, REGIONS = ctx.REGIONS;
   var slug = city.slug;
+  var arCity = arCityBySlug(slug);
   var list = centresOf(slug, CENTRES);
   return '<div class="wrap"><p class="crumb"><a href="' + link("") + '">Accueil</a> › <a href="' + link("villes") + '">Villes</a> › ' + esc(city.name) + '</p>'
-    + '<h1 style="font-size:1.8rem">Hijama à ' + esc(city.name) + '</h1><p class="sec-sub" style="margin-top:8px">Région ' + esc(city.region) + ". Centres de hijama vérifiés à " + esc(city.name) + " : admission contrôlée, hygiène vérifiée, fiche rédigée par notre équipe.</p>"
+    + '<h1 style="font-size:1.8rem">Hijama à ' + esc(city.name) + '</h1>' + (arCity ? '<p style="margin-top:8px"><a href="/ar/ville/' + slug + '/" lang="ar">العربية — دليل الحجامة في ' + esc(arCity.ar) + ' →</a></p>' : "") + '<p class="sec-sub" style="margin-top:8px">Région ' + esc(city.region) + ". Centres de hijama vérifiés à " + esc(city.name) + " : admission contrôlée, hygiène vérifiée, fiche rédigée par notre équipe.</p>"
     + (list.length ? '<div class="grid centres">' + list.map(centreCard).join("") + "</div>"
       : '<div class="empty"><h3 style="margin-bottom:6px">Aucun centre vérifié pour le moment à ' + esc(city.name) + '</h3><p>Nous n\'avons pas encore validé de centre dans cette ville — et nous préférons une page vide à une fiche non vérifiée. Vous y gérez un centre ? Passez la vérification et soyez le premier publié ici.</p><p style="margin-top:14px"><a class="btn small" href="' + link("inscription?ville=" + slug) + '">Inscrire un centre à ' + esc(city.name) + "</a></p></div>")
     + adSlot(false)
@@ -629,6 +715,66 @@ function avisPublishedHTML(c, avisList) {
     return '<article class="card" style="margin-top:12px;box-shadow:none"><div class="avis-line"><span class="stars" aria-hidden="true">' + st + "</span><b>" + esc(a.nom || "Visiteur") + "</b>" + (a.dateSeance ? "<span>· Séance du " + esc(a.dateSeance) + "</span>" : "") + '</div><p style="margin-top:8px">' + esc(a.texte || "") + "</p></article>";
   }).join("");
   return head + cards + ((avisList.length > 3) ? '<div style="text-align:center;margin-top:12px"><button class="btn ghost" type="button" id="avisMore">Voir les ' + avisList.length + " avis</button></div>" : "");
+}
+/* ---------- Vues arabes (RTL) : /ar et /ar/ville/<slug> ----------
+   Ports fidèles des vues de l'application (même HTML) : la page
+   statique et le rendu côté client doivent être identiques. */
+function arCentreCard(c) {
+  var svcs = (c.services || []).slice(0, 3).map(arService);
+  var rating = "";
+  if (c.ratingCount > 0) { var avg = (c.ratingAvg || 0).toFixed(1).replace(".", ","); rating = '<p class="meta">★ ' + avg + ' / 5 — ' + c.ratingCount + ' ' + (c.ratingCount > 1 ? 'تقييمات' : 'تقييم') + ' على الدليل</p>'; }
+  return '<article class="card centre-card" data-href="/centre/' + c.slug + '/">'
+  + '<div class="card-body">'
+  + '<h3><a href="/centre/' + c.slug + '/">' + esc(c.name) + '</a></h3>'
+  + '<p class="meta">📍 ' + esc(c.address || c.city) + ' — <span class="badge">✓ مركز موثّق</span></p>'
+  + rating
+  + '<p class="svc-line">' + svcs.map(function (s) { return esc(s); }).join(" · ") + '</p>'
+  + '<div class="actions"><a class="btn small" href="/centre/' + c.slug + '/">عرض الملف</a><a class="btn small ghost" href="tel:' + c.phoneIntl + '">📞 ' + esc(c.phone) + '</a></div>'
+  + '</div></article>';
+}
+function arAdSlot() {
+  return '<div class="ad-slot" aria-label="مساحة إعلانية">مساحة إعلانية</div>';
+}
+function arCityChips(current) {
+  return AR_CITIES.map(function (x) { return '<a class="chip" href="/ar/ville/' + x.slug + '/">' + esc(x.ar) + (x.slug === current ? ' <span class="n">هذه المدينة</span>' : '') + '</a>'; }).join("");
+}
+function viewArHome(ctx) {
+  var CENTRES = ctx.CENTRES;
+  var list = sortCentres(CENTRES.filter(function (c) { return !c.suspended; }));
+  return '<div class="wrap">'
+  + '<p class="crumb"><a href="/">Annuaire Hijama</a> › العربية</p>'
+  + '<h1 style="font-size:1.8rem">دليل الحجامة في المغرب</h1>'
+  + '<p class="sec-sub" style="margin-top:8px">الحجامة في المغرب ممارسة عريقة يبحث عنها الآلاف كل شهر، من الدار البيضاء إلى طنجة. هذا الدليل يجمع مراكز الحجامة التي تم التحقق منها في جميع المناطق، بعد التواصل المباشر مع كل مركز والتأكد من نظافته قبل نشره. ابحث عن مدينتك أدناه، أو سجّل مركزك ليظهر هنا بعد التحقق.</p>'
+  + '<p class="sec-sub" style="margin-top:10px">النسخة الفرنسية: <a href="/">Annuaire Hijama — version française →</a></p>'
+  + '<section class="block"><div class="sec-head"><h2>المراكز الموثوقة</h2><a href="/centres/">جميع المراكز →</a></div>'
+  + '<div class="grid centres">' + list.map(arCentreCard).join("") + '<article class="card" style="display:flex;flex-direction:column;gap:8px;justify-content:center;text-align:center"><h3>مركزك غير موجود هنا؟</h3><p>التسجيل مفتوح في جميع المدن. كل طلب يمر عبر التحقق من النظافة قبل النشر.</p><div class="actions" style="justify-content:center"><a class="btn small" href="/inscription/">سجّل مركزك</a></div></article></div></section>'
+  + '<section class="block"><div class="sec-head"><h2>الحجامة في المدن الكبرى</h2><a href="/ar/">دليل الحجامة في المغرب</a></div>'
+  + '<div class="chips">' + arCityChips("") + '</div></section>'
+  + '<section class="block"><div class="sec-head"><h2>كيف يدخل مركز إلى الدليل؟</h2><a href="/verification/">التفاصيل →</a></div>'
+  + '<div class="steps"><div class="step"><div class="num">1</div><h3>طلب التسجيل</h3><p>يملأ المركز استمارة التسجيل بمعلوماته وخدماته.</p></div>'
+  + '<div class="step"><div class="num">2</div><h3>التواصل والصور</h3><p>نتصل بالمركز ونطلب صورا حقيقية لمقره وقاعات العلاج.</p></div>'
+  + '<div class="step"><div class="num">3</div><h3>التحقق من النظافة</h3><p>أدوات لاستعمال واحد، تعقيم، تدبير النفايات الطبية: لا تنشر البطاقة إلا إذا استوفى المركز المعايير.</p></div>'
+  + '<div class="step"><div class="num">4</div><h3>النشر</h3><p>ننشر البطاقة، ويتوصل المركز بفضائه الخاص لتدبيرها. لا مكان للشراء في هذا الدليل.</p></div></div></section>'
+  + arAdSlot()
+  + '<p style="margin-top:20px"><a class="btn" href="/inscription/">سجّل مركزك في الدليل</a></p>'
+  + '</div>';
+}
+function viewArVille(city, ctx) {
+  var slug = city.slug;
+  var frCity = null; ctx.CITIES.forEach(function (c) { if (c.slug === slug) frCity = c; });
+  var regionAr = frCity ? ((AR_REGIONS[frCity.region]) || frCity.region) : "";
+  var list = centresOf(slug, ctx.CENTRES).filter(function (c) { return !c.suspended; });
+  var frHref = (slug === "casablanca") ? "/ville/casablanca/" : "/villes/";
+  return '<div class="wrap">'
+  + '<p class="crumb"><a href="/ar/">الرئيسية</a> › ' + esc(city.ar) + '</p>'
+  + '<h1 style="font-size:1.8rem">دليل الحجامة في ' + esc(city.ar) + '</h1>'
+  + '<p class="sec-sub" style="margin-top:8px">جهة ' + esc(regionAr) + '. ' + esc(AR_INTROS[slug] || ("الحجامة في " + city.ar + " يبحث عنها سكان المدينة، ودليل الحجامة في " + city.ar + " يجمع المراكز الموثوقة بعد التحقق منها.")) + '</p>'
+  + '<p class="sec-sub" style="margin-top:10px">النسخة الفرنسية: <a href="' + frHref + '">Voir en français →</a></p>'
+  + (list.length ? '<div class="grid centres">' + list.map(arCentreCard).join("") + '</div>'
+    : '<div class="empty"><h3 style="margin-bottom:6px">لا يوجد مركز موثوق بعد في ' + esc(city.ar) + '</h3><p>لم نتحقق بعد من أي مركز في هذه المدينة، ونفضل صفحة فارغة على بطاقة غير موثوقة. هل تدير مركزا هنا؟ اجتز التحقق وكن أول مركز منشور في ' + esc(city.ar) + '.</p><p style="margin-top:14px"><a class="btn small" href="/inscription?ville=' + slug + '">سجّل مركزك في ' + esc(city.ar) + '</a></p></div>')
+  + arAdSlot()
+  + '<section class="block"><div class="sec-head"><h2>الحجامة في المدن الكبرى</h2><a href="/ar/">دليل الحجامة في المغرب →</a></div><div class="chips">' + arCityChips(slug) + '</div></section>'
+  + '</div>';
 }
 function viewCentre(c, ctx) {
   var CENTRES = ctx.CENTRES;
@@ -835,8 +981,51 @@ function writeRedirect(route, target) {
   console.log("  [redirection] " + SITE + "/" + route + "/ -> " + url);
 }
 
+/* ------------------------------------------------------------------ */
+/* En-tête par langue : pages arabes en RTL (lang="ar" dir="rtl",
+   og:locale ar_AR), hreflang fr/ar là où les deux versions
+   existent, et sélecteur de langue de l'en-tête pointant vers
+   la version équivalente de la page courante. */
+function setLangHead(html, route) {
+  var seg = route.split("/").filter(Boolean);
+  var isAr = seg[0] === "ar";
+  var frUrl = null, arUrl = null;
+  if (route === "") { frUrl = SITE + "/"; arUrl = SITE + "/ar/"; }
+  else if (route === "ar") { frUrl = SITE + "/"; arUrl = SITE + "/ar/"; }
+  else if (seg[0] === "ville" && seg[1] === "casablanca") { frUrl = SITE + "/ville/casablanca/"; arUrl = SITE + "/ar/ville/casablanca/"; }
+  else if (seg[0] === "ar" && seg[1] === "ville" && seg[2] === "casablanca") { frUrl = SITE + "/ville/casablanca/"; arUrl = SITE + "/ar/ville/casablanca/"; }
+  else if (seg[0] === "ar" && seg[1] === "ville") { arUrl = SITE + "/ar/ville/" + seg[2] + "/"; }
+  if (isAr) {
+    html = html.replace('<html lang="fr">', '<html lang="ar" dir="rtl">');
+    html = html.replace('<meta property="og:locale" content="fr_FR" />', '<meta property="og:locale" content="ar_AR" />');
+  }
+  var pairs = [];
+  if (frUrl) pairs.push(["fr", frUrl]);
+  if (arUrl) pairs.push(["ar", arUrl]);
+  if (route === "" || route === "ar") pairs.push(["x-default", SITE + "/"]);
+  if (pairs.length) {
+    var links = pairs.map(function (p) { return '<link rel="alternate" hreflang="' + p[0] + '" href="' + p[1] + '" />'; }).join("\n  ");
+    html = html.replace(/(<link rel="canonical" href="[^"]*" \/>)/, "$1\n  " + links);
+  }
+  var swHref, swLabel, swLang;
+  if (isAr) {
+    swLabel = "Français"; swLang = "fr";
+    if (seg[1] === "ville" && seg[2] === "casablanca") swHref = "/ville/casablanca/";
+    else if (seg[1] === "ville") swHref = "/villes/";
+    else swHref = "/";
+  } else {
+    swLabel = "العربية"; swLang = "ar";
+    if (seg[0] === "ville" && seg[1]) swHref = "/ar/ville/" + seg[1] + "/";
+    else swHref = "/ar/";
+  }
+  html = html.replace(/<a href="[^"]*" id="langSwitch" lang="[^"]*">[^<]*<\/a>/, '<a href="' + swHref + '" id="langSwitch" lang="' + swLang + '">' + swLabel + '</a>');
+  return html;
+}
+
 const SITEMAP_META = [
   [/^$/, 1.0, "daily"],
+  [/^ar$/, 0.9, "weekly"],
+  [/^ar\/ville\//, 0.7, "monthly"],
   [/^centres$/, 0.8, "weekly"],
   [/^villes$/, 0.8, "weekly"],
   [/^guides$/, 0.8, "weekly"],
@@ -931,7 +1120,9 @@ async function main() {
     citySlugsWithCentres[citySlug(c.city)] = 1;
   });
   Object.keys(citySlugsWithCentres).forEach(function (s) { routes.push("ville/" + s); });
-  console.log("Routes à générer : " + routes.length + " (dont " + Object.keys(citySlugsWithCentres).length + " ville(s) avec centre).");
+  routes.push("ar");
+  AR_CITIES.forEach(function (x) { routes.push("ar/ville/" + x.slug); });
+  console.log("Routes à générer : " + routes.length + " (dont " + Object.keys(citySlugsWithCentres).length + " ville(s) avec centre, 21 page(s) arabe(s)).");
 
   // Nettoyage des sorties générées (une page de centre supprimé disparaît).
   ["ville", "centre", "service", "guide", "centres", "villes", "guides", "inscription", "verification"].forEach(function (d) {
@@ -959,12 +1150,15 @@ async function main() {
     else if (seg[0] === "centre") body = viewCentre(ctx.centresBySlug[seg[1]], ctx);
     else if (seg[0] === "service") body = viewService(ctx.centresBySlug[seg[1]], parseInt(seg[2], 10));
     else if (seg[0] === "ville") body = viewVille(ctx.citiesBySlug[seg[1]], ctx);
+    else if (seg[0] === "ar" && seg[1] === "ville") body = viewArVille(arCityBySlug(seg[2]), ctx);
+    else if (route === "ar") body = viewArHome(ctx);
     else throw new Error("Route inconnue : " + route);
 
     var meta = metaFor(route, { cities: ctx.citiesBySlug, centres: ctx.centresBySlug, guides: ctx.guidesBySlug });
     var url = pageUrl(route);
     var html = setHeadMeta(template, meta.title, meta.desc, url);
     html = setApp(html, body, route === "");
+    html = setLangHead(html, route);
     var out = outPath(route);
     fs.mkdirSync(path.dirname(out), { recursive: true });
     fs.writeFileSync(out, html, "utf8");
