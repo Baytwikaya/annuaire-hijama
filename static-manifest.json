@@ -3,120 +3,120 @@
   "urls": [
     {
       "loc": "https://hijama.site/",
-      "lastmod": "2026-11-19",
-      "hash": "ddfe785f5000f69c",
+      "lastmod": "2026-11-20",
+      "hash": "272b55aca5b3f764",
       "changefreq": "daily",
       "priority": 1
     },
     {
       "loc": "https://hijama.site/centres/",
-      "lastmod": "2026-11-19",
-      "hash": "67bed33b45ceebbf",
+      "lastmod": "2026-11-20",
+      "hash": "a2fd60b026112493",
       "changefreq": "weekly",
       "priority": 0.8
     },
     {
       "loc": "https://hijama.site/villes/",
-      "lastmod": "2026-11-19",
-      "hash": "e39c7a546867d599",
+      "lastmod": "2026-11-20",
+      "hash": "a769aec2e8fe7188",
       "changefreq": "weekly",
       "priority": 0.8
     },
     {
       "loc": "https://hijama.site/guides/",
-      "lastmod": "2026-11-19",
-      "hash": "9766c4afb1174151",
+      "lastmod": "2026-11-20",
+      "hash": "803dbcdb65f4baca",
       "changefreq": "weekly",
       "priority": 0.8
     },
     {
       "loc": "https://hijama.site/inscription/",
-      "lastmod": "2026-11-19",
-      "hash": "2a1ed88dc70328e0",
+      "lastmod": "2026-11-20",
+      "hash": "97559f29bbfbcef7",
       "changefreq": "monthly",
       "priority": 0.5
     },
     {
       "loc": "https://hijama.site/verification/",
-      "lastmod": "2026-11-19",
-      "hash": "91e7c9544b25dab4",
+      "lastmod": "2026-11-20",
+      "hash": "ba4b85ade312ead7",
       "changefreq": "monthly",
       "priority": 0.5
     },
     {
       "loc": "https://hijama.site/guide/choisir-centre-hijama/",
-      "lastmod": "2026-11-19",
-      "hash": "238db8c9877d0477",
+      "lastmod": "2026-11-20",
+      "hash": "4a710f62fd55f715",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/guide/hygiene-securite-hijama/",
-      "lastmod": "2026-11-19",
-      "hash": "91ae29f427f6f937",
+      "lastmod": "2026-11-20",
+      "hash": "61b7839c26de4523",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/guide/premiere-seance-hijama/",
-      "lastmod": "2026-11-19",
-      "hash": "02395f379dd46e27",
+      "lastmod": "2026-11-20",
+      "hash": "c5434a6cc93853ea",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/guide/questions-frequentes-hijama/",
-      "lastmod": "2026-11-19",
-      "hash": "30d748af71525b02",
+      "lastmod": "2026-11-20",
+      "hash": "640cbe4d4b994619",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/centre/bayt-al-wiqaya-casablanca/",
-      "lastmod": "2026-11-19",
-      "hash": "5c90cf28578cb8c7",
+      "lastmod": "2026-11-20",
+      "hash": "77f7a11ef98f8de5",
       "changefreq": "weekly",
       "priority": 0.9
     },
     {
       "loc": "https://hijama.site/service/bayt-al-wiqaya-casablanca/0/",
-      "lastmod": "2026-11-19",
-      "hash": "edaefe98cab9c074",
+      "lastmod": "2026-11-20",
+      "hash": "298e713850a7ca49",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/service/bayt-al-wiqaya-casablanca/1/",
-      "lastmod": "2026-11-19",
-      "hash": "9f2f94bb462cebd2",
+      "lastmod": "2026-11-20",
+      "hash": "584a170814712f9f",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/service/bayt-al-wiqaya-casablanca/2/",
-      "lastmod": "2026-11-19",
-      "hash": "057c34e125515162",
+      "lastmod": "2026-11-20",
+      "hash": "b2f0feb899cb3a60",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/service/bayt-al-wiqaya-casablanca/3/",
-      "lastmod": "2026-11-19",
-      "hash": "cb9c6427ec04d5ef",
+      "lastmod": "2026-11-20",
+      "hash": "f0b69c690217bcd3",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/service/bayt-al-wiqaya-casablanca/4/",
-      "lastmod": "2026-11-19",
-      "hash": "aae4423247052771",
+      "lastmod": "2026-11-20",
+      "hash": "916ae5f9c71abc36",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/ville/casablanca/",
-      "lastmod": "2026-11-19",
-      "hash": "866532dc4a9f38a2",
+      "lastmod": "2026-11-20",
+      "hash": "877825e78d2e4992",
       "changefreq": "monthly",
       "priority": 0.7
     }
