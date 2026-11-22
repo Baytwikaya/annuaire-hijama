@@ -493,7 +493,7 @@ function metaFor(route, ctx) {
     var ac = arCityBySlug(seg[2]);
     if (ac) {
       var n = 0; Object.keys(ctx.centres).forEach(function (k) { var cc = ctx.centres[k]; if (!cc.suspended && citySlug(cc.city) === seg[2]) n++; });
-      return { title: "دليل الحجامة في " + ac.ar + " — الحجامة في " + ac.ar + " | Annuaire Hijama", desc: arMetaDesc(ac, n > 0) };
+      return { title: "حجامة " + ac.ar + " — الحجامة في " + ac.ar + " | Annuaire Hijama", desc: arMetaDesc(ac, n > 0) };
     }
     return { title: HOME_TITLE, desc: HOME_DESC };
   }
@@ -501,7 +501,7 @@ function metaFor(route, ctx) {
   if (seg[0] === "centres") return { title: "Tous les centres de hijama vérifiés au Maroc — Annuaire Hijama", desc: "Liste des centres de hijama vérifiés au Maroc : hygiène contrôlée, avis vérifiés, coordonnées et tarifs." };
   if (seg[0] === "villes") return { title: "Hijama par ville — 375 villes du Maroc — Annuaire Hijama", desc: "Trouvez un centre de hijama vérifié dans votre ville, parmi 375 villes du Maroc." };
   if (seg[0] === "ville" && seg[1] && ctx.cities[seg[1]])
-    return { title: "Hijama à " + ctx.cities[seg[1]].name + " — Centres vérifiés | Annuaire Hijama", desc: "Centres de hijama vérifiés à " + ctx.cities[seg[1]].name + " : adresses, avis vérifiés et hygiène contrôlée. Trouvez un centre près de chez vous." };
+    return { title: "Hijama " + ctx.cities[seg[1]].name + " — Centres vérifiés | Annuaire Hijama", desc: "Centres de hijama vérifiés à " + ctx.cities[seg[1]].name + " : adresses, avis vérifiés et hygiène contrôlée. Trouvez un centre près de chez vous." };
   if (seg[0] === "centre" && seg[1] && ctx.centres[seg[1]]) {
     var c = ctx.centres[seg[1]];
     return { title: c.name + " — Annuaire Hijama", desc: (c.desc || HOME_DESC).slice(0, 160) };
@@ -610,11 +610,20 @@ function serviceListHTML(c) {
     return '<a class="svc-row' + (src ? "" : " no-photo") + '" href="' + link("service/" + c.slug + "/" + i) + '">' + thumb + '<span class="svc-name">' + esc(s) + '</span><span class="svc-arrow" aria-hidden="true">›</span></a>';
   }).join("") + "</div>";
 }
+/* Villes ordonnées pour les listes déroulantes : grandes villes
+   (MAJOR_CITIES, dans l'ordre) d'abord, puis les autres par ordre
+   alphabétique. Les libellés sont le nom de la ville seul. */
+function orderedCities(CITIES, MAJOR_CITIES) {
+  var majors = [], majorSlugs = {};
+  MAJOR_CITIES.forEach(function (n) { var c = null; CITIES.forEach(function (x) { if (x.name === n) c = x; }); if (c) { majors.push(c); majorSlugs[c.slug] = 1; } });
+  var rest = CITIES.filter(function (c) { return !majorSlugs[c.slug]; }).sort(function (a, b) { return a.name.localeCompare(b.name, "fr"); });
+  return majors.concat(rest);
+}
 /* Sélecteur de ville du formulaire d'inscription : grandes villes
    d'abord (MAJOR_CITIES, dans l'ordre), puis toutes les autres villes
    regroupées par région. La valeur reste le slug de la ville. */
 function majorCityOptions(preselect, CITIES, REGIONS, MAJOR_CITIES) {
-  function opt(c, sel) { return '<option value="' + c.slug + '"' + (sel ? " selected" : "") + ">" + esc(c.name) + " — " + esc(c.region) + "</option>"; }
+  function opt(c, sel) { return '<option value="' + c.slug + '"' + (sel ? " selected" : "") + ">" + esc(c.name) + "</option>"; }
   var majors = [], majorSlugs = {};
   MAJOR_CITIES.forEach(function (n) { var c = null; CITIES.forEach(function (x) { if (x.name === n) c = x; }); if (c) { majors.push(c); majorSlugs[c.slug] = 1; } });
   var out = '<optgroup label="Grandes villes">' + majors.map(function (c) { return opt(c, preselect === c.slug); }).join("") + "</optgroup>";
@@ -622,6 +631,7 @@ function majorCityOptions(preselect, CITIES, REGIONS, MAJOR_CITIES) {
     var rest = [];
     REGIONS[r].forEach(function (n) { var c = null; CITIES.forEach(function (x) { if (x.name === n) c = x; }); if (c && !majorSlugs[c.slug]) rest.push(c); });
     if (!rest.length) return;
+    rest.sort(function (a, b) { return a.name.localeCompare(b.name, "fr"); });
     out += '<optgroup label="' + esc(r) + '">' + rest.map(function (c) { return '<option value="' + c.slug + '"' + (preselect === c.slug ? " selected" : "") + ">" + esc(c.name) + "</option>"; }).join("") + "</optgroup>";
   });
   return out;
@@ -640,7 +650,7 @@ function centresOf(slug, CENTRES) { return sortCentres(CENTRES.filter(function (
 
 function viewHome(ctx) {
   var CENTRES = ctx.CENTRES, CITIES = ctx.CITIES, GUIDES = ctx.GUIDES;
-  var cityOpts = CITIES.map(function (c) { return '<option value="' + c.slug + '">' + esc(c.name) + " — " + esc(c.region) + "</option>"; }).join("");
+  var cityOpts = orderedCities(CITIES, ctx.MAJOR_CITIES).map(function (c) { return '<option value="' + c.slug + '">' + esc(c.name) + "</option>"; }).join("");
   var topCities = ["Casablanca", "Rabat", "Marrakech", "Agadir", "Tanger", "Fès", "Meknès", "Oujda", "Kénitra", "Tétouan", "Laâyoune", "Dakhla"];
   return '<div class="hero"><div class="wrap"><h1>Trouvez un centre de <em>hijama</em> vérifié, près de chez vous</h1>'
     + '<p>Chaque centre publié dans cet annuaire a été contacté par notre équipe, a transmis des photos de ses locaux et a passé un contrôle d\'hygiène avant acceptation. Pas d\'inscription automatique, pas de fiche fantôme.</p>'
@@ -694,7 +704,7 @@ function viewVille(city, ctx) {
   var arCity = arCityBySlug(slug);
   var list = centresOf(slug, CENTRES);
   return '<div class="wrap"><p class="crumb"><a href="' + link("") + '">Accueil</a> › <a href="' + link("villes") + '">Villes</a> › ' + esc(city.name) + '</p>'
-    + '<h1 style="font-size:1.8rem">Hijama à ' + esc(city.name) + '</h1>' + (arCity ? '<p style="margin-top:8px"><a href="/ar/ville/' + slug + '/" lang="ar">العربية — دليل الحجامة في ' + esc(arCity.ar) + ' →</a></p>' : "") + '<p class="sec-sub" style="margin-top:8px">Région ' + esc(city.region) + ". Centres de hijama vérifiés à " + esc(city.name) + " : admission contrôlée, hygiène vérifiée, fiche rédigée par notre équipe.</p>"
+    + '<h1 style="font-size:1.8rem">Hijama ' + esc(city.name) + '</h1>' + (arCity ? '<p style="margin-top:8px"><a href="/ar/ville/' + slug + '/" lang="ar">العربية — دليل الحجامة في ' + esc(arCity.ar) + ' →</a></p>' : "") + '<p class="sec-sub" style="margin-top:8px">Région ' + esc(city.region) + ". Centres de hijama vérifiés à " + esc(city.name) + " : admission contrôlée, hygiène vérifiée, fiche rédigée par notre équipe.</p>"
     + (list.length ? '<div class="grid centres">' + list.map(centreCard).join("") + "</div>"
       : '<div class="empty"><h3 style="margin-bottom:6px">Aucun centre vérifié pour le moment à ' + esc(city.name) + '</h3><p>Nous n\'avons pas encore validé de centre dans cette ville — et nous préférons une page vide à une fiche non vérifiée. Vous y gérez un centre ? Passez la vérification et soyez le premier publié ici.</p><p style="margin-top:14px"><a class="btn small" href="' + link("inscription?ville=" + slug) + '">Inscrire un centre à ' + esc(city.name) + "</a></p></div>")
     + adSlot(false)
@@ -767,7 +777,7 @@ function viewArVille(city, ctx) {
   var frHref = (slug === "casablanca") ? "/ville/casablanca/" : "/villes/";
   return '<div class="wrap">'
   + '<p class="crumb"><a href="/ar/">الرئيسية</a> › ' + esc(city.ar) + '</p>'
-  + '<h1 style="font-size:1.8rem">دليل الحجامة في ' + esc(city.ar) + '</h1>'
+  + '<h1 style="font-size:1.8rem">حجامة ' + esc(city.ar) + '</h1>'
   + '<p class="sec-sub" style="margin-top:8px">جهة ' + esc(regionAr) + '. ' + esc(AR_INTROS[slug] || ("الحجامة في " + city.ar + " يبحث عنها سكان المدينة، ودليل الحجامة في " + city.ar + " يجمع المراكز الموثوقة بعد التحقق منها.")) + '</p>'
   + '<p class="sec-sub" style="margin-top:10px">النسخة الفرنسية: <a href="' + frHref + '">Voir en français →</a></p>'
   + (list.length ? '<div class="grid centres">' + list.map(arCentreCard).join("") + '</div>'
