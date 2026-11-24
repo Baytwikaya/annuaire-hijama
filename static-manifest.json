@@ -1,269 +1,269 @@
 {
-  "generatedAt": "2026-11-23",
+  "generatedAt": "2026-11-24",
   "urls": [
     {
       "loc": "https://hijama.site/",
-      "lastmod": "2026-11-23",
-      "hash": "d5040d7cfb8144f9",
+      "lastmod": "2026-11-24",
+      "hash": "27f341b0fcab1c6f",
       "changefreq": "daily",
       "priority": 1
     },
     {
       "loc": "https://hijama.site/centres/",
-      "lastmod": "2026-11-23",
-      "hash": "7ea24711c3924c36",
+      "lastmod": "2026-11-24",
+      "hash": "838d520882cbf824",
       "changefreq": "weekly",
       "priority": 0.8
     },
     {
       "loc": "https://hijama.site/villes/",
-      "lastmod": "2026-11-23",
-      "hash": "04a9a468e6a0c573",
+      "lastmod": "2026-11-24",
+      "hash": "a5016af0a4b24b3c",
       "changefreq": "weekly",
       "priority": 0.8
     },
     {
       "loc": "https://hijama.site/guides/",
-      "lastmod": "2026-11-23",
-      "hash": "cd3ac97930671f04",
+      "lastmod": "2026-11-24",
+      "hash": "9f539fa5b97f83ba",
       "changefreq": "weekly",
       "priority": 0.8
     },
     {
       "loc": "https://hijama.site/inscription/",
-      "lastmod": "2026-11-23",
-      "hash": "eb889b561504aea8",
+      "lastmod": "2026-11-24",
+      "hash": "45bb87501bc4648a",
       "changefreq": "monthly",
       "priority": 0.5
     },
     {
       "loc": "https://hijama.site/verification/",
-      "lastmod": "2026-11-23",
-      "hash": "649d7edc25aaa478",
+      "lastmod": "2026-11-24",
+      "hash": "316dc1762d3f897f",
       "changefreq": "monthly",
       "priority": 0.5
     },
     {
       "loc": "https://hijama.site/guide/choisir-centre-hijama/",
-      "lastmod": "2026-11-23",
-      "hash": "0b475547cbee145c",
+      "lastmod": "2026-11-24",
+      "hash": "6039a915a22558cc",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/guide/hygiene-securite-hijama/",
-      "lastmod": "2026-11-23",
-      "hash": "776b0fe169db5f81",
+      "lastmod": "2026-11-24",
+      "hash": "0b9bc1af27536707",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/guide/premiere-seance-hijama/",
-      "lastmod": "2026-11-23",
-      "hash": "7721b13aec97625b",
+      "lastmod": "2026-11-24",
+      "hash": "3d11fea9043df62d",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/guide/questions-frequentes-hijama/",
-      "lastmod": "2026-11-23",
-      "hash": "3f2a220c7e755b82",
+      "lastmod": "2026-11-24",
+      "hash": "7bcb0d683289e9a2",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/centre/bayt-wikaya-casablanca/",
-      "lastmod": "2026-11-23",
-      "hash": "c004e9b4bba884eb",
+      "lastmod": "2026-11-24",
+      "hash": "f2d0a296a99b2e72",
       "changefreq": "weekly",
       "priority": 0.9
     },
     {
       "loc": "https://hijama.site/service/bayt-wikaya-casablanca/0/",
-      "lastmod": "2026-11-23",
-      "hash": "78d4692269ef75cd",
+      "lastmod": "2026-11-24",
+      "hash": "fb0b90d1cdace379",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/service/bayt-wikaya-casablanca/1/",
-      "lastmod": "2026-11-23",
-      "hash": "4a52aaa5474e97fa",
+      "lastmod": "2026-11-24",
+      "hash": "eb1564e3be544a16",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/service/bayt-wikaya-casablanca/2/",
-      "lastmod": "2026-11-23",
-      "hash": "e6fc6f68c77504b5",
+      "lastmod": "2026-11-24",
+      "hash": "b71ab867409c23ff",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/service/bayt-wikaya-casablanca/3/",
-      "lastmod": "2026-11-23",
-      "hash": "db32dff25c9b15c7",
+      "lastmod": "2026-11-24",
+      "hash": "c662cf2af414a571",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/service/bayt-wikaya-casablanca/4/",
-      "lastmod": "2026-11-23",
-      "hash": "cb759ae702b23625",
+      "lastmod": "2026-11-24",
+      "hash": "d0949a2853697973",
       "changefreq": "monthly",
       "priority": 0.6
     },
     {
       "loc": "https://hijama.site/ville/casablanca/",
-      "lastmod": "2026-11-23",
-      "hash": "a8b389b208048c8e",
+      "lastmod": "2026-11-24",
+      "hash": "e0c40ad2d470c871",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/",
-      "lastmod": "2026-11-23",
-      "hash": "3358610c6d21d1fe",
+      "lastmod": "2026-11-24",
+      "hash": "0edcbf43fbd94f40",
       "changefreq": "weekly",
       "priority": 0.9
     },
     {
       "loc": "https://hijama.site/ar/ville/casablanca/",
-      "lastmod": "2026-11-23",
-      "hash": "e3a754fa6bd6a421",
+      "lastmod": "2026-11-24",
+      "hash": "1447b65a8c6d62d5",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/rabat/",
-      "lastmod": "2026-11-23",
-      "hash": "ca8215d99141350b",
+      "lastmod": "2026-11-24",
+      "hash": "beb6091a1a7de05d",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/sale/",
-      "lastmod": "2026-11-23",
-      "hash": "451f2f395281760d",
+      "lastmod": "2026-11-24",
+      "hash": "55433e1384f27f2d",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/marrakech/",
-      "lastmod": "2026-11-23",
-      "hash": "5a27a54bafb49d2e",
+      "lastmod": "2026-11-24",
+      "hash": "c7207cc0ccf6e924",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/fes/",
-      "lastmod": "2026-11-23",
-      "hash": "5b9008a25ac0fe9d",
+      "lastmod": "2026-11-24",
+      "hash": "258d1a7209884e05",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/tanger/",
-      "lastmod": "2026-11-23",
-      "hash": "2e5eecceec5fcb23",
+      "lastmod": "2026-11-24",
+      "hash": "56e4e50ff0c3ddaf",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/agadir/",
-      "lastmod": "2026-11-23",
-      "hash": "8f388967ecf062ab",
+      "lastmod": "2026-11-24",
+      "hash": "bd1b048db4c18485",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/meknes/",
-      "lastmod": "2026-11-23",
-      "hash": "cfb7866d4ece39fa",
+      "lastmod": "2026-11-24",
+      "hash": "5dd39bf2d03a0215",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/oujda/",
-      "lastmod": "2026-11-23",
-      "hash": "fc30678e14dbef14",
+      "lastmod": "2026-11-24",
+      "hash": "bd9572ab6a6271bd",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/kenitra/",
-      "lastmod": "2026-11-23",
-      "hash": "f57f3de267a1d91b",
+      "lastmod": "2026-11-24",
+      "hash": "841e5af524b8d746",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/tetouan/",
-      "lastmod": "2026-11-23",
-      "hash": "76e5eeac061b50b9",
+      "lastmod": "2026-11-24",
+      "hash": "1d758a2b0cd94f57",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/el-jadida/",
-      "lastmod": "2026-11-23",
-      "hash": "469ce5b40d03329e",
+      "lastmod": "2026-11-24",
+      "hash": "b4d598552193726a",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/nador/",
-      "lastmod": "2026-11-23",
-      "hash": "5440cdd472969edb",
+      "lastmod": "2026-11-24",
+      "hash": "e05986c3ce33b5c8",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/beni-mellal/",
-      "lastmod": "2026-11-23",
-      "hash": "de8c47956278df3b",
+      "lastmod": "2026-11-24",
+      "hash": "f9e7f28e0c9f3a68",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/mohammedia/",
-      "lastmod": "2026-11-23",
-      "hash": "e024b12a39071dac",
+      "lastmod": "2026-11-24",
+      "hash": "d4d42e0ec6e7ed8e",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/khouribga/",
-      "lastmod": "2026-11-23",
-      "hash": "1b24aa5f6139aae8",
+      "lastmod": "2026-11-24",
+      "hash": "1e5d6e88e3e63764",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/safi/",
-      "lastmod": "2026-11-23",
-      "hash": "211a5907286b4ed0",
+      "lastmod": "2026-11-24",
+      "hash": "d7710635c613b53c",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/settat/",
-      "lastmod": "2026-11-23",
-      "hash": "d0c082f47b589cc4",
+      "lastmod": "2026-11-24",
+      "hash": "b2f40a39d6579c7a",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/taza/",
-      "lastmod": "2026-11-23",
-      "hash": "1c6c26c8a72f29a8",
+      "lastmod": "2026-11-24",
+      "hash": "57443ba99e4e8955",
       "changefreq": "monthly",
       "priority": 0.7
     },
     {
       "loc": "https://hijama.site/ar/ville/khemisset/",
-      "lastmod": "2026-11-23",
-      "hash": "1d046fca7d6c5cce",
+      "lastmod": "2026-11-24",
+      "hash": "6db4588a5d187319",
       "changefreq": "monthly",
       "priority": 0.7
     }
